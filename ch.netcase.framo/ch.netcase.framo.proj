@@ -10,7 +10,8 @@
     <DeviceOrientations>Portrait;Landscape</DeviceOrientations>
     <iOSStatusBarStyle>Default</iOSStatusBarStyle>
     <BundleVersion>1.0.0</BundleVersion>
-    <iOSDisplayName>Framo SA</iOSDisplayName>
+    <iOSDisplayName>
+    </iOSDisplayName>
     <AndroidVersionCode>1</AndroidVersionCode>
     <AndroidHardwareAcceleration>True</AndroidHardwareAcceleration>
     <iOSDeviceFamily>1;2</iOSDeviceFamily>
