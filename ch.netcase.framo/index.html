@@ -119,21 +119,58 @@
 		}
 
 		$(document).ready(function(){
+            // CHECK STATUS
 			$('#pagenews,#pagefotos,#pagevideos').live('pagebeforeshow', function(e){
 		 		connectionStatus = navigator.onLine ? 'online' : 'offline';
                 if(connectionStatus == 'online'){
                     return true;
                 }else{
                     $('.errormsg p').html(msg_nonetwork);
-                    $('#albums,#videos,#brochurehome,#map_canvas#poi,#distributionlist').hide();
+                    $('#albums,#videos,#brochurehome,#map_canvas#poi,#distributionlist,#fbroot,#update').hide();
                     
                 }
             });
+            //PAGE NEWS
+            $('#pagenews').live("pagebeforeshow", function(event) {				
+                var title;
+                var image;
+                $.ajax({
+                    type: "GET",
+                    url: "http://www.framo.ch/index.php?id=524&type=9818",
+                    dataType: "xml",
+                    success: function(xml) {
+                        var output = '<div />';
+                        $(xml).find('item').each(function(i){
+                            title = $(this).find('title').text();
+                            var dateFormated = $(this).find('pubDate').text();
+                            
+                            var teaser = $(this).find('description').text();
+                            image = $(this).find('image').text();
+                            var email = '<a href="mailto:ihre@emailadresse.ch&subject=Framo%20SA%20Empfehlung" target="_blank" class="social"><img src="images/i_mail.png" /></a>';
+                            var fbshare = '<img src="images/i_facebook.png" id="'+ i +'" type="button" class="share_button social">';
+                            var google = '<a class="g-plus" href="#" onclick="google_button();"><img src="images/i_google.png" /></a>';
+                            var twitter = '<a href="#" rel="nofollow" onclick="twitter_button();"><img src="images/i_twitter.png" /></a>';
+                            output += '<div id="news'+ i +'"><h3>'+ title +'</h3>';
+                            output += '<img src="http://www.framo.ch/uploads/tx_news/'+image +'" class="newsImage" id="image'+ i +'" /><p>'+ teaser +'</p><p>'+ dateFormated +'</p>';
+                            output += '<div id="socialLinks">' + fbshare + email + google + twitter +'</div><hr></div>';
+                        });
+                        //output += '<ul>';
+                        $('#update').html(output);
+                    }
+                });
+                $('.share_button').live('click',function(e){
+                    e.preventDefault();
+                    var newsId = $(this).attr("id");
+                    var imageSrc = $("#image"+newsId).attr('src');console.log(imageSrc);
+                    window.open('http://m.facebook.com/sharer.php?s=100&p[images][0]='+image+'','sharer','toolbar=0,status=0,width=548,height=325');
+                });	
+			});
+            //PAGE FOTOS
             $('div.gallery-page').live('pagebeforeshow', function(e){
 		 		$("div.gallery a", e.target).photoSwipe({captionAndToolbarOpacity:1,zIndex:99999999});
             	return true;
             });
-
+            // PAGE SCANNER
 		 	$('#pageqrscanner').live('pagebeforeshow', function() {
 		 	$("#qrscan").live('click', function() {
 
@@ -147,43 +184,47 @@
 		 			alert("Scanning failed: " + error);
 		 		});
 		 	});
+                
+            
+                
+                
 		 });
 
 		 	$('#submit').live('click', function() { // catch the form's submit event
-		 	$('#brochure').validate();
-		 	if($('input[type="checkbox"]').is(':checked')){
-
-		 		// Send data to server through the ajax call
-		 		// action is functionality we want to call and outputJSON is our data
-		 		$.ajax({url: 'check.php',
-		 		/*data: {action : 'login', formData : $('#brochure').serialize()},*/
-					type: 'post',
-					async: 'true',
-					dataType: 'json',
-					beforeSend: function() {
-					// This callback function will trigger before data is sent
-					// $.mobile.showPageLoadingMsg(true); // This will show ajax spinner
-				},
-					complete: function() {
-					// This callback function will trigger on data sent/received complete
-					//$.mobile.hidePageLoadingMsg(); // This will hide ajax spinner
-				},
-					success: function (result) {
-					if(result.status) {
-						$.mobile.changePage("#second");
-					} else {
-						alert(msg_order_error_brochure);
-					}
-				},
-                	error: function (request,error) {
-                    // This callback function will trigger on unsuccessful action
-                    alert(msg_order_error);
+                $('#brochure').validate();
+                if($('input[type="checkbox"]').is(':checked')){
+    
+                    // Send data to server through the ajax call
+                    // action is functionality we want to call and outputJSON is our data
+                    $.ajax({url: 'check.php',
+                    /*data: {action : 'login', formData : $('#brochure').serialize()},*/
+                        type: 'post',
+                        async: 'true',
+                        dataType: 'json',
+                        beforeSend: function() {
+                        // This callback function will trigger before data is sent
+                        // $.mobile.showPageLoadingMsg(true); // This will show ajax spinner
+                    },
+                        complete: function() {
+                        // This callback function will trigger on data sent/received complete
+                        //$.mobile.hidePageLoadingMsg(); // This will hide ajax spinner
+                    },
+                        success: function (result) {
+                        if(result.status) {
+                            $.mobile.changePage("#second");
+                        } else {
+                            alert(msg_order_error_brochure);
+                        }
+                    },
+                        error: function (request,error) {
+                        // This callback function will trigger on unsuccessful action
+                        alert(msg_order_error);
+                    }
+                    });
+                }else{
+                    alert("Bitte wählen Sie eine Broschüre");
                 }
-				});
-			}else{
-			alert("Bitte wählen Sie eine Broschüre");
-		}
-			return false; // cancel original event to prevent form submitting
+                return false; // cancel original event to prevent form submitting
 			});
 		});
 
@@ -283,53 +324,6 @@
 
 <!-- NEWS -->
 <div data-role="page" id="pagenews">
-	<script type="text/javascript">
-		$(document).ready(function(){
-			$('#pagenews').on("pagebeforeshow", function(event) {
-				document.addEventListener("online", function(){ alert("You're online") }, false);
-				document.addEventListener("offline", function(){ alert("You're offline") }, false);
-
-				function onOnline() {
-					var title;
-					var image;
-					$.ajax({
-							   type: "GET",
-							   url: "http://www.framo.ch/index.php?id=524&type=9818",
-							   dataType: "xml",
-							   success: function(xml) {
-								   var output = '<div />';
-								   $(xml).find('item').each(function(i){
-									   title = $(this).find('title').text();
-									   var dateFormated = $(this).find('pubDate').text();
-
-									   var teaser = $(this).find('description').text();
-									   image = $(this).find('image').text();
-									   var email = '<a href="mailto:ihre@emailadresse.ch&subject=Framo%20SA%20Empfehlung" target="_blank" class="social"><img src="images/i_mail.png" /></a>';
-									   var fbshare = '<img src="images/i_facebook.png" id="'+ i +'" type="button" class="share_button social">';
-									   var google = '<a class="g-plus" href="#" onclick="google_button();"><img src="images/i_google.png" /></a>';
-									   var twitter = '<a href="#" rel="nofollow" onclick="twitter_button();"><img src="images/i_twitter.png" /></a>';
-									   output += '<div id="news'+ i +'"><h3>'+ title +'</h3>';
-									   output += '<img src="http://www.framo.ch/uploads/tx_news/'+image +'" class="newsImage" id="image'+ i +'" /><p>'+ teaser +'</p><p>'+ dateFormated +'</p>';
-									   output += '<div id="socialLinks">' + fbshare + email + google + twitter +'</div><hr></div>';
-								   });
-								   //output += '<ul>';
-								   $('#update').html(output);
-							   }
-						   });
-					$('.share_button').live('click',function(e){
-						e.preventDefault();
-						var newsId = $(this).attr("id");
-						var imageSrc = $("#image"+newsId).attr('src');console.log(imageSrc);
-						window.open('http://m.facebook.com/sharer.php?s=100&p[images][0]='+image+'','sharer','toolbar=0,status=0,width=548,height=325');
-					});
-				}
-				function onOffline() {
-					output = '<div><h3>'+ msg_nonetwork +'</h3></div>';
-					$('#update').html(output);
-				}
-			});
-		});
-	</script>
 	<div data-role="header">
 		<a href="#pagehome" class="back" ><img src="images/icon_arrow_back.png" /> </a>
 		<h1 id="msg_header_news"></h1>
@@ -881,7 +875,7 @@
 <div data-role="page" id="pagedistributor">
 	<script type="text/javascript">
 		$(document).ready(function(){
-			$('#pagedistributor').live("pageshow", function() {
+			$('#pagedistributor').live('pageshow', function() {
 				$("form").submit(function() {
 					event.preventDefault();
 					document.activeElement.blur();
@@ -894,7 +888,7 @@
 					url = 'http://www.framo.ch/feed/userncdealer_dealers_fr.json';
 				}
 				$("#distributorLink").click(function() {
-					window.open(this.href, '_system', 'location=yes');
+					window.open(this.href, '_system', 'location=yes');                  
 				});
 				$.getJSON(url, function(data) {
 					var markers=[];
@@ -902,15 +896,15 @@
 					$.each(data.markers, function(i, marker) {
 						var latLng = new google.maps.LatLng(marker.lat, marker.lng);
 						var marker = new google.maps.Marker({
-																position: latLng,
-																title: decodeURIComponent(escape(marker.company)),
-																icon: 'images/icon_gmap.png',
-																map: map,
-																content:decodeURIComponent(escape(marker.company +'<br />'+marker.street +', '+ marker.zip +' '+ marker.place)),
-																image:marker.media,
-																address:decodeURIComponent(escape(marker.street +', '+ marker.zip +' '+ marker.place)),
-																link:marker.link
-															});
+                            position: latLng,
+                            title: decodeURIComponent(escape(marker.company)),
+                            icon: 'images/icon_gmap.png',
+                            map: map,
+                            content:decodeURIComponent(escape(marker.company +'<br />'+marker.street +', '+ marker.zip +' '+ marker.place)),
+                            image:marker.media,
+                            address:decodeURIComponent(escape(marker.street +', '+ marker.zip +' '+ marker.place)),
+                            link:marker.link
+						});
 
 						google.maps.event.addListener(marker, 'click', function() {
 							if (infowindow) infowindow.close();
@@ -928,12 +922,12 @@
 										   map.setZoom(15);
 										   map.setCenter(latLng);
 										   calcRoute(latLng);
-									   })
+									   }).scrollTop();
 								.appendTo('#distributionlist ul');
 					});
 				});
 
-			});
+			});	
 		});
 	</script>
 	<div data-role="header">
