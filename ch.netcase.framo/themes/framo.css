@@ -82,19 +82,11 @@ div.ui-controlgroup-label {
 #pagefotos .ui-content a, #pagebrochure .ui-content a {
 	font-size: 18px;
 	font-weight: normal;
+    margin-left:10px;
 }
 #pagenews .ui-content,
 #pagedistributor .ui-content,
-#pagegallery .ui-content,
-#pagegallery .gallery-item a,
-#pagegallery1 .ui-content,
-#pagegallery1 .gallery-item a,
-#pagegallery2 .ui-content,
-#pagegallery2 .gallery-item a,
-#pagegallery3 .ui-content,
-#pagegallery3 .gallery-item a,
-#pagegallery5 .ui-content,
-#pagegallery5 .gallery-item a {
+.ui-content, .gallery-item a {
 	margin:0 !important;
 	padding: 0 !important;
 }
@@ -527,14 +519,16 @@ button[disabled],
 }
 
 .ui-header {
-	height: 100px;
+	height: 55px;
+    position: fixed !important;
+    z-index:9;
 }
 .ui-title {
 	font-family: museo300;
 	font-size: 2em !important;
 	font-weight: normal;
 	margin: 0 !important;
-	padding: 45px 15px 0 0 !important;
+	padding: 10px 15px 0 0 !important;
 	text-align: right !important;
 }
 .ui-navbar {
@@ -558,7 +552,7 @@ button[disabled],
 	background-color: transparent !important;
 	border: none !important;
 	box-shadow: none !important;
-	margin: 40px 0 0 !important;
+/*	margin: 40px 0 0 !important;*/
 }
 .back img {
 	width: 35px;

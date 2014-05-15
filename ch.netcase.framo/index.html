@@ -120,11 +120,8 @@
 
 		$(document).ready(function(){
 
-
-
-
-		 $('div.gallery-page').live('pagebeforeshow', function(e){
-		 	connectionStatus = navigator.onLine ? 'online' : 'offline';alert(connectionStatus);
+			$('div.gallery-page').live('pagebeforeshow', function(e){
+		 	connectionStatus = navigator.onLine ? 'online' : 'offline';
 		 	if(connectionStatus = 'online'){
 		 		// Re-initialize with the photos for the current page
 		 		$("div.gallery a", e.target).photoSwipe({captionAndToolbarOpacity:1,zIndex:99999999});
@@ -134,7 +131,7 @@
 		 	}
 		 })
 
-		 $('#pageqrscanner').live('pagebeforeshow', function() {
+		 	$('#pageqrscanner').live('pagebeforeshow', function() {
 		 	$("#qrscan").live('click', function() {
 
 		 		app.initialize();
@@ -149,9 +146,7 @@
 		 	});
 		 });
 
-
-
-		 $('#submit').live('click', function() { // catch the form's submit event
+		 	$('#submit').live('click', function() { // catch the form's submit event
 		 	$('#brochure').validate();
 		 	if($('input[type="checkbox"]').is(':checked')){
 
