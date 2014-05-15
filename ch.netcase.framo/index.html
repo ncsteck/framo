@@ -119,17 +119,20 @@
 		}
 
 		$(document).ready(function(){
-
-			$('div.gallery-page').live('pagebeforeshow', function(e){
-		 	connectionStatus = navigator.onLine ? 'online' : 'offline';
-		 	if(connectionStatus = 'online'){
-		 		// Re-initialize with the photos for the current page
+			$('#pagenews,#pagefotos,#pagevideos').live('pagebeforeshow', function(e){
+		 		connectionStatus = navigator.onLine ? 'online' : 'offline';
+                if(connectionStatus == 'online'){
+                    return true;
+                }else{
+                    $('.errormsg p').html(msg_nonetwork);
+                    $('#albums,#videos,#brochurehome,#map_canvas#poi,#distributionlist').hide();
+                    
+                }
+            });
+            $('div.gallery-page').live('pagebeforeshow', function(e){
 		 		$("div.gallery a", e.target).photoSwipe({captionAndToolbarOpacity:1,zIndex:99999999});
-		 		return true;
-		 	}else{
-		 		alert('no connection');
-		 	}
-		 })
+            	return true;
+            });
 
 		 	$('#pageqrscanner').live('pagebeforeshow', function() {
 		 	$("#qrscan").live('click', function() {
@@ -332,6 +335,7 @@
 		<h1 id="msg_header_news"></h1>
 	</div><!-- /header -->
 	<div data-role="content">
+        <div class="errormsg"><p></p></div>
 		<div id="fb-root"></div>
 		<div id="update"></div>
 	</div><!-- /content -->
@@ -344,6 +348,7 @@
 		<h1 class="msg_header_fotos"></h1>
 	</div>
 	<div data-role="content">
+        <div class="errormsg"><p></p></div>
 		<div id="albums_container" class="current">
 
 			<div class="loader" style="display:none;"></div>
@@ -760,19 +765,20 @@
 	<div data-role="header">
 		<a href="#pagehome" class="back" ><img src="images/icon_arrow_back.png" /> </a>
 		<h1 id="msg_header_videos"></h1>
-	</div><!-- /header -->
+	</div>
 	<div data-role="content">
-
-		<a href="http://vimeo.com/80304090" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/promovideo_de.png" /></a><br /><p><a href="http://vimeo.com/80304090" onclick="window.open(this.href,'_blank'); return false;">Promo-Video "Deutsch"</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
-		<br /><hr/>
-		<a href="http://vimeo.com/80291500" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/promovideo_fr.png" /></a><br /><p><a href="http://vimeo.com/80291500" onclick="window.open(this.href,'_blank'); return false;">Promo Video "Français"</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
-		<br /><hr/>
-		<a href="http://vimeo.com/74304221" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/cristalvideo_de.png" /></a><br /><p><a href="http://vimeo.com/74304221" onclick="window.open(this.href,'_blank'); return false;">FRAMO CRISTAL - DE</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.<br />FRAMO - CRISTAL MADE WITH SWAROVSKI&reg; ELEMENTS</p>
-		<br /><hr/>
-		<a href="http://vimeo.com/74304031" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/cristalvideo_fr.png" /></a><br /><p><a href="http://vimeo.com/74304031" onclick="window.open(this.href,'_blank'); return false;">FRAMO - CRISTAL FR</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.<br />FRAMO - CRISTAL MADE WITH SWAROVSKI&reg; ELEMENTS</p>
-		<br /><hr/>
-		<a href="http://vimeo.com/20647582" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/wavevideo_de.png" /></a><br /><p><a href="http://vimeo.com/20647582" onclick="window.open(this.href,'_blank'); return false;">WAVE</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
-
+    	<div class="errormsg"><p></p></div>
+        <div id="videos">
+            <a href="http://vimeo.com/80304090" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/promovideo_de.png" /></a><br /><p><a href="http://vimeo.com/80304090" onclick="window.open(this.href,'_blank'); return false;">Promo-Video "Deutsch"</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
+            <br /><hr/>
+            <a href="http://vimeo.com/80291500" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/promovideo_fr.png" /></a><br /><p><a href="http://vimeo.com/80291500" onclick="window.open(this.href,'_blank'); return false;">Promo Video "Français"</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
+            <br /><hr/>
+            <a href="http://vimeo.com/74304221" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/cristalvideo_de.png" /></a><br /><p><a href="http://vimeo.com/74304221" onclick="window.open(this.href,'_blank'); return false;">FRAMO CRISTAL - DE</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.<br />FRAMO - CRISTAL MADE WITH SWAROVSKI&reg; ELEMENTS</p>
+            <br /><hr/>
+            <a href="http://vimeo.com/74304031" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/cristalvideo_fr.png" /></a><br /><p><a href="http://vimeo.com/74304031" onclick="window.open(this.href,'_blank'); return false;">FRAMO - CRISTAL FR</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.<br />FRAMO - CRISTAL MADE WITH SWAROVSKI&reg; ELEMENTS</p>
+            <br /><hr/>
+            <a href="http://vimeo.com/20647582" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/wavevideo_de.png" /></a><br /><p><a href="http://vimeo.com/20647582" onclick="window.open(this.href,'_blank'); return false;">WAVE</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
+		</div>
 	</div>
 </div>
 
@@ -812,6 +818,7 @@
 		<h1 class="msg_header_brochure"></h1>
 	</div><!-- /header -->
 	<div data-role="content">
+        <div class="errormsg"><p></p></div>
 		<ul id="brochurehome" data-role="listview"  data-corners="false" data-shadow="false">
 			<li id="products"><a href="http://www.framo.ch/downloads/epaper-RGB_Framo_Broschuere_2014/mobile.html" onclick="window.open(this.href,'_blank'); return false;" id="msg_products"></a></li>
 			<li id="careguide"><a href="http://www.framo.ch/downloads/epaper-Flyer_PDF_DU/mobile.html" onclick="window.open(this.href,'_blank'); return false;" id="msg_careguide"></a></li>
@@ -934,9 +941,8 @@
 		<h1 id="msg_header_distributor"></h1>
 	</div><!-- /header -->
 	<div data-role="content">
-		<div id="message" style="display:none;">
+		<div class="errormsg"><p></p></div>
 
-		</div>
 		<div id="map_canvas" class="map rounded"></div>
 		<div id="poi"></div>
 		<div id="distributionlist" >

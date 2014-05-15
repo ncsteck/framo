@@ -111,6 +111,9 @@ div.ui-controlgroup-label {
 	font-size: 12px;
 	position: absolute;
 }
+.errormsg p {
+    font-size:12px;
+}
 /* Separators
 -----------------------------------------------------------------------------------------------------------*/
 /* Field contain separator (< 28em) */
