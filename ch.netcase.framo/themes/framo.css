@@ -65,7 +65,7 @@ iframe, object, embed {
 }
 #map_canvas {
 	max-width: 100%;
-	min-height: 300px;
+	min-height: 200px;
 }
 legend,
 .ui-input-text input,
@@ -661,7 +661,7 @@ h3.ui-li-heading {
 }
 #poi div {
 	float:left;
-	width: 90%;
+	width: 85%;
 }
 #poi .pin {
 	height: 100%;
