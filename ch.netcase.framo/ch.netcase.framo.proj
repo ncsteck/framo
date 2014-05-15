@@ -8,7 +8,7 @@
     <IsRunnable>true</IsRunnable>
     <AndroidPermissions>android.permission.CAMERA;android.permission.ACCESS_COARSE_LOCATION;android.permission.ACCESS_FINE_LOCATION;android.permission.ACCESS_LOCATION_EXTRA_COMMANDS;android.permission.READ_PHONE_STATE;android.permission.INTERNET;android.permission.ACCESS_NETWORK_STATE</AndroidPermissions>
     <DeviceOrientations>Portrait;Landscape</DeviceOrientations>
-    <iOSStatusBarStyle>Default</iOSStatusBarStyle>
+    <iOSStatusBarStyle>Hidden</iOSStatusBarStyle>
     <BundleVersion>1.0.0</BundleVersion>
     <iOSDisplayName>
     </iOSDisplayName>
@@ -17,7 +17,10 @@
     <iOSDeviceFamily>1;2</iOSDeviceFamily>
     <iOSBackgroundMode />
     <FrameworkVersion>3.2.0</FrameworkVersion>
-    <CorePlugins>com.phonegap.plugins.barcodescanner;org.apache.cordova.device;org.apache.cordova.splashscreen</CorePlugins>
+    <CorePlugins>org.apache.cordova.camera;org.apache.cordova.device;org.apache.cordova.geolocation;org.apache.cordova.inappbrowser;org.apache.cordova.network-information;org.apache.cordova.splashscreen;com.phonegap.plugins.barcodescanner</CorePlugins>
+    <DisplayName>FRAMO SA</DisplayName>
+    <Description>ch.netcase.framo</Description>
+    <Author>NETCASE GmbH</Author>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\Telerik\ICE\Tools\Mobile\MobileTools.targets" />
 </Project>
