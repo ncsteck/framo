@@ -529,7 +529,11 @@ button[disabled],
 
 .ui-header {
 	height: 55px;
+    left: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     position: fixed !important;
+    top: 0;
     z-index:9;
 }
 .ui-title {
@@ -596,11 +600,12 @@ h3.ui-li-heading {
 	border-width:0 !important;
 	border-bottom-width: 1px !important;
 }
-
 .custom-li {
 	padding: 0 !important;
 }
-
+.ui-listview-filter {
+    background:none;
+}
 .custom-li-last {
 	border-top-width: 0 !important;
 }
