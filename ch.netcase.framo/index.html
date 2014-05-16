@@ -53,10 +53,10 @@
 													 position.coords.longitude);
 
 					var infowindow = new google.maps.InfoWindow({
-																	map: map,
-																	position: pos,
-																	content: 'Ihr Standort'
-																});
+                        map: map,
+                        position: pos,
+                        content: 'Ihr Standort'
+                    });
 
 					map.setCenter(pos);
 				}, function() {
@@ -102,7 +102,7 @@
 					};
 					directionsService.route(request, function(response, status) {
 						if (status == google.maps.DirectionsStatus.OK) {
-							//directionsDisplay.setDirections(response);
+							directionsDisplay.setDirections(response);
 						}
 						distance=response.routes[0].legs[0].distance.text;
 						document.getElementById('distance').innerHTML = distance;
@@ -126,7 +126,7 @@
                     return true;
                 }else{
                     $('.errormsg p').html(msg_nonetwork);
-                    $('#albums,#videos,#brochurehome,#map_canvas#poi,#distributionlist,#fbroot,#update').hide();
+                    $('#albums,#videos,#brochurehome,#map_canvas,#poi,#distributionlist,#fbroot,#update').hide();
                     
                 }
             });
@@ -299,7 +299,7 @@
 
 		</div>
 	</div><!-- /content -->
-</div><!-- /page -->
+</div>
 
 <!-- INFO -->
 <div data-role="page" id="pageinfo">
@@ -316,7 +316,7 @@
 			<a href="mailto:info@framo.ch">E-Mail: info@framo.ch</a><br />
 			<a href="http://www.framo.ch" onclick="window.open(this.href,'_system'); return false;">www.framo.ch</a>
 		</p>
-		<p class="version">Version: 1.0.0 - 15.05.2014</p>
+		<p class="version">Version: 1.0.0 - 16.05.2014</p>
 
 	</div>
 </div>
@@ -348,12 +348,12 @@
 			<div class="loader" style="display:none;"></div>
 			<ul id="albums" data-role="listview"  data-corners="false" data-shadow="false">
 				<li id="Badmoebel"><a href="#pagegallery" id="msg_cat1"></a></li>
-				<li id="Unterbaumoebel"><a href="#pagegallery3" id="msg_cat2"></a></li>
-   				<li id="Schraenke"><a href="#pagegallery2" id="msg_cat3"></a></li>
+				<li id="Unterbaumoebel"><a href="#pagegallery2" id="msg_cat2"></a></li>
+   				<li id="Schraenke"><a href="#pagegallery3" id="msg_cat3"></a></li>
                 <li id="Spiegel"><a href="#pagegallery31" id="msg_cat31"></a></li>
 				<li id="Design Line"><a href="#pagegallery4" id="msg_cat4"></a></li>
-				<li id="Wohnbereich"><a href="#pagegallery5" id="msg_cat5"></a></li>
 				<li id="Waschraumloesung"><a href="#pagegallery6" id="msg_cat6"></a></li>
+                <li id="Wohnbereich"><a href="#pagegallery5" id="msg_cat5"></a></li>				
 				<li id="Oeffentlicher Raum"><a href="#pagegallery7" id="msg_cat7"></a></li>
 				<li id="3D Farbvisualisierung"><a href="#pagegallery8" id="msg_cat8"></a></li>
 				<li id="Griffe"><a href="#pagegallery9" id="msg_cat9"></a></li>
@@ -392,11 +392,11 @@
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Glano_Noblesse_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Noblesse_CRH_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Onda_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Onda_FRAMO_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Palmira_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Palmira_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Publico_Gastro_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Publico_Gastro_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Procasa_Uno_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Procasa_Uno_CRH_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Publico_Gastro_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Publico_Gastro_FRAMO_thumbs.jpg" /></a></div>               				
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Ragazza_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Ragazza_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Stella_01_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Stella_01_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Stella_02_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Stella_02_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Stilo_Stilo_2_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Stilo_Stilo_2_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Riviera_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Riviera_CRH_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Stilo_Stilo_2_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Stilo_Stilo_2_FRAMO_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Style_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Style_FRAMO_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Vetro_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Vetro_CRH_thumbs.jpg" /></a></div>
 			</div>
@@ -426,14 +426,14 @@
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Maxi_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Maxi_01_FRAMO_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Maxi_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Maxi_02_FRAMO_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Prima_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Prima_01_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Prima_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Prima_02_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Procasa_Uno_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Procasa_Uno_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Riviera_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Riviera_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Prima_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Prima_02_FRAMO_thumbs.jpg" /></a></div>				
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Slim_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Slim_01_CRH_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Slim_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Slim_02_CRH_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Smart_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Smart_01_FRAMO_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Smart_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Smart_02_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Universel_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Universel_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Stella_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Stella_01_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Stella_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Stella_02_FRAMO_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Universel_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Universel_CRH_thumbs.jpg" /></a></div>
 				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Universel_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Universel_FRAMO_thumbs.jpg" /></a></div>
 			</div>
 
@@ -516,7 +516,9 @@
 		<div class="gallery">
 
 			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Unico_Pfau_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Pfau_FRAMO_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Wave_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Wave_FRAMO_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Unico_Sujet_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Sujet_FRAMO_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Unico_Wald_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Wald_FRAMO_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Wave_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Wave_FRAMO_thumbs.jpg" /></a></div>
 
 
 
