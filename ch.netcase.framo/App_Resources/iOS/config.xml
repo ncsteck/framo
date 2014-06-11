@@ -15,7 +15,7 @@
     <preference name="ShowSplashScreenSpinner" value="true" />
     <preference name="SuppressesIncrementalRendering" value="false" />
     <preference name="TopActivityIndicator" value="gray" />
-    
+    <preference name="StatusBarOverlaysWebView" value="false" />
     <!-- legacy preferences -->
     <!--
     <preference name="UIWebViewBounce" value="true" />
@@ -42,6 +42,7 @@
         <plugin name="Battery" value="CDVBattery" />
         <plugin name="Globalization" value="CDVGlobalization" />
         <plugin name="InAppBrowser" value="CDVInAppBrowser" />
+        <plugin name="com.phonegap.plugin.statusbar" />
     </plugins>
 
     <access origin="*" />
