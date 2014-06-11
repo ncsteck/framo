@@ -17,7 +17,7 @@
     <iOSDeviceFamily>1;2</iOSDeviceFamily>
     <iOSBackgroundMode />
     <FrameworkVersion>3.2.0</FrameworkVersion>
-    <CorePlugins>org.apache.cordova.camera;org.apache.cordova.device;org.apache.cordova.geolocation;org.apache.cordova.inappbrowser;org.apache.cordova.network-information;org.apache.cordova.splashscreen;com.phonegap.plugins.barcodescanner</CorePlugins>
+    <CorePlugins>org.apache.cordova.camera;org.apache.cordova.device;org.apache.cordova.device-orientation;org.apache.cordova.geolocation;org.apache.cordova.inappbrowser;org.apache.cordova.network-information;org.apache.cordova.splashscreen;org.apache.cordova.statusbar;com.phonegap.plugins.barcodescanner</CorePlugins>
     <DisplayName>FRAMO SA</DisplayName>
     <Description>ch.netcase.framo</Description>
     <Author>NETCASE GmbH</Author>
