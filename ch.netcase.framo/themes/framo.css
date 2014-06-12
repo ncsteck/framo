@@ -586,6 +586,9 @@ button[disabled],
 #albums li, #brochurehome li, #qr li {
 	padding: 1em 0;
 }
+#albums li:first-child {
+    margin-top:13px;
+}
 .custom-collapsible {
 	margin: 0 !important;
 }
@@ -711,6 +714,9 @@ h3.ui-li-heading {
 }
 hr {
 	color: #ffffff;
+}
+#feed, #msg_noupdate {
+    display: none;
 }
 @media only screen and (max-width:600px) {
 	.horizon img {
