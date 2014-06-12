@@ -28,7 +28,7 @@ var app = {
     bindEvents: function() {
         document.addEventListener('deviceready', this.onDeviceReady, false);
         document.getElementById('scan').addEventListener('click', this.scan, false);
-        document.getElementById('encode').addEventListener('click', this.encode, false);
+        //document.getElementById('encode').addEventListener('click', this.encode, false);
     },
 
     // deviceready Event Handler
@@ -42,8 +42,8 @@ var app = {
     // Update DOM on a Received Event
     receivedEvent: function(id) {
         var parentElement = document.getElementById(url);
-        var listeningElement = parentElement.querySelector('.listening');
-        var receivedElement = parentElement.querySelector('.received');
+        //var listeningElement = parentElement.querySelector('.listening');
+        //var receivedElement = parentElement.querySelector('.received');
 
         //listeningElement.setAttribute('style', 'display:none;');
         //receivedElement.setAttribute('style', 'display:block;');
@@ -53,34 +53,19 @@ var app = {
 
     scan: function() {
         //console.log('scanning');
-        
+       
         var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 
         scanner.scan( function (result) { 
-			
-            /*alert("We got a barcode\n" + 
-            "Result: " + result.text + "\n" + 
-            "Format: " + result.format + "\n" + 
-            "Cancelled: " + result.cancelled);  
-			
-           console.log("Scanner result: \n" +
-                "text: " + result.text + "\n" +
-                "format: " + result.format + "\n" +
-                "cancelled: " + result.cancelled + "\n");
-            */
                          
-             document.getElementById("url").innerHTML = result.text;
-             document.getElementById("url").setAttribute('href',result.text);
-             document.getElementById("linkText").setAttribute('style', 'display:block;');alert(reult.text);
-            if(result.text != '') { alert(result.text);
-            	document.window.open(result.text,'_blank','location=yes,enableViewportScale=yes');
+             //document.getElementById("url").innerHTML = result.text;
+             //document.getElementById("url").setAttribute('href',result.text);
+             //document.getElementById("linkText").setAttribute('style', 'display:block;');
+            
+            if (result.format == "QR_CODE") {
+                window.plugins.childBrowser.showWebPage(result.text, { showLocationBar: false });
             }
-                //console.log(result);
-            /*
-            if (args.format == "QR_CODE") {
-                window.plugins.childBrowser.showWebPage(args.text, { showLocationBar: false });
-            }
-            */
+            
 
         }, function (error) { 
             console.log("Scanning failed: ", error); 
