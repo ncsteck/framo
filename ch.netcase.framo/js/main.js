@@ -52,7 +52,7 @@ var app = {
     },
 
     scan: function() {
-        console.log('scanning');
+        //console.log('scanning');
         
         var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 
@@ -71,10 +71,11 @@ var app = {
                          
              document.getElementById("url").innerHTML = result.text;
              document.getElementById("url").setAttribute('href',result.text);
-             document.getElementById("linkText").setAttribute('style', 'display:block;');
-            if(result.text != '') 
-            	document.window.open(result.text,'_blank');
-            //console.log(result);
+             document.getElementById("linkText").setAttribute('style', 'display:block;');alert(reult.text);
+            if(result.text != '') { alert(result.text);
+            	document.window.open(result.text,'_blank','location=yes,enableViewportScale=yes');
+            }
+                //console.log(result);
             /*
             if (args.format == "QR_CODE") {
                 window.plugins.childBrowser.showWebPage(args.text, { showLocationBar: false });
