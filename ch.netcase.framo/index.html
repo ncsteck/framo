@@ -41,6 +41,7 @@
 		var infowindow;
 		var mylatitude;
 		var mylongitude;
+        var warning = false;
 		function initialize() {
 			var mapOptions = {
 				zoom: 12
@@ -55,9 +56,9 @@
 					var infowindow = new google.maps.InfoWindow({
                         map: map,
                         position: pos,
-                        content: 'Ihr Standort'
+                        content: msg_standort
                     });
-
+					infowindow.setOptions({disableAutoPan:false,maxWidth:"200"});
 					map.setCenter(pos);
 				}, function() {
 					handleNoGeolocation(true);
@@ -112,21 +113,59 @@
 
 		}
 		function twitter_button () {
-			window.open('https://twitter.com/share?text=Framo%20SA%20Empfehlung&url=http://www.framo.ch', 'Twitter', 'toolbar=0,status=0,width=626,height=436');
+			window.open('https://twitter.com/share?text=Framo%20SA%20Empfehlung&url=http://www.framo.ch', '_blank', 'location=yes,enableViewportScale=yes');
 		}
 		function google_button () {
-			window.open('https://plus.google.com/share?url=http//www.framo.ch', 'Google plus', 'toolbar=0,status=0,width=626,height=436');
+			window.open('https://plus.google.com/share?url=http//www.framo.ch', '_blank', 'location=yes,enableViewportScale=yes');
 		}
 
+        function check_update () {
+            var serverFeedVersion = (function () {
+                var serverFeedVersion = null;
+                $.ajax({
+                    'async': false,
+                    'global': false,
+                    'url': 'http://www.framo.ch/framo/version.json',
+                    'dataType': "json",
+                    'success': function (data) {
+                        serverFeedVersion = data.FeedVersion;
+                    }
+                });
+                return serverFeedVersion;
+            })();
+            var localFeedVersion = (function () {
+                var localFeedVersion = null;
+                $.ajax({
+                    'async': false,
+                    'global': false,
+                    'url': 'version.json',
+                    'dataType': "json",
+                    'success': function (data) {
+                        localFeedVersion = data.FeedVersion;
+                    }
+                });
+                return localFeedVersion;
+            })(); 
+
+            if(serverFeedVersion > localFeedVersion) {
+                $('#msg_check_update,#msg_noupdate').hide();
+                $('#feed').show();
+            }else {
+                $('#msg_noupdate').show();
+            }
+        }
+        function update () {
+            
+        }
 		$(document).ready(function(){
             // CHECK STATUS
-			$('#pagenews,#pagefotos,#pagevideos').live('pagebeforeshow', function(e){
+			$('#pageinfo,#pagenews,#pagevideos').live('pagebeforeshow', function(e){
 		 		connectionStatus = navigator.onLine ? 'online' : 'offline';
                 if(connectionStatus == 'online'){
                     return true;
                 }else{
                     $('.errormsg p').html(msg_nonetwork);
-                    $('#albums,#videos,#brochurehome,#map_canvas,#poi,#distributionlist,#fbroot,#update').hide();
+                    $('#msg_check_update,#videos,#brochurehome,#map_canvas,#poi').hide();
                     
                 }
             });
@@ -134,6 +173,7 @@
             $('#pagenews').live("pagebeforeshow", function(event) {				
                 var title;
                 var image;
+                var StrippedString;
                 $.ajax({
                     type: "GET",
                     url: "http://www.framo.ch/index.php?id=524&type=9818",
@@ -142,14 +182,14 @@
                         var output = '<div />';
                         $(xml).find('item').each(function(i){
                             title = $(this).find('title').text();
-                            var dateFormated = $(this).find('pubDate').text();
-                            
+                            var dateFormated = $(this).find('pubDate').text();                 
                             var teaser = $(this).find('description').text();
+                            StrippedString = teaser.replace(/(<([^>]+)>)/ig,"");
                             image = $(this).find('image').text();
-                            var email = '<a href="mailto:ihre@emailadresse.ch&subject=Framo%20SA%20Empfehlung" target="_blank" class="social"><img src="images/i_mail.png" /></a>';
+                            var email = '<a href="mailto:?subject='+ title +'&body='+ encodeURIComponent(StrippedString) +'" target="_system" class="social"><img src="images/i_mail.png" /></a>';
                             var fbshare = '<img src="images/i_facebook.png" id="'+ i +'" type="button" class="share_button social">';
-                            var google = '<a class="g-plus" href="#" onclick="google_button();"><img src="images/i_google.png" /></a>';
-                            var twitter = '<a href="#" rel="nofollow" onclick="twitter_button();"><img src="images/i_twitter.png" /></a>';
+                            var google = '<a class="g-plus" href="#" onclick="google_button();" target="_system"><img src="images/i_google.png" /></a>';
+                            var twitter = '<a href="#" rel="nofollow" onclick="twitter_button();" target="_system"><img src="images/i_twitter.png" /></a>';
                             output += '<div id="news'+ i +'"><h3>'+ title +'</h3>';
                             output += '<img src="http://www.framo.ch/uploads/tx_news/'+image +'" class="newsImage" id="image'+ i +'" /><p>'+ teaser +'</p><p>'+ dateFormated +'</p>';
                             output += '<div id="socialLinks">' + fbshare + email + google + twitter +'</div><hr></div>';
@@ -161,8 +201,8 @@
                 $('.share_button').live('click',function(e){
                     e.preventDefault();
                     var newsId = $(this).attr("id");
-                    var imageSrc = $("#image"+newsId).attr('src');console.log(imageSrc);
-                    window.open('http://m.facebook.com/sharer.php?s=100&p[images][0]='+image+'','sharer','toolbar=0,status=0,width=548,height=325');
+                    var imageSrc = $("#image"+newsId).attr('src');
+                    window.open('http://m.facebook.com/sharer.php?u=http://www.framo.ch&t='+ encodeURIComponent(StrippedString) +'&s=100&p[images][0]='+image+'','_blank', 'location=yes,enableViewportScale=yes');
                 });	
 			});
             //PAGE FOTOS
@@ -172,60 +212,88 @@
             });
             // PAGE SCANNER
 		 	$('#pageqrscanner').live('pagebeforeshow', function() {
-		 	$("#qrscan").live('click', function() {
+                $("#qrscan").live('click', function() {
 
 		 		app.initialize();
 		 		//console.log("I am now scanning");
 		 		cordova.plugins.barcodeScanner.scan( function(result){
-		 			if (!result.cancelled) {
-		 			$("#result").text(result.format + " | " + result.text);
-		 		}
+                    //if (!result.cancelled) {
+                    window.open(result.text, '_blank', 'location=yes,enableViewportScale=yes');
+                    //$("#result").text(result.format + " | " + result.text);
+                    //}
 		 		}, function(error){
 		 			alert("Scanning failed: " + error);
-		 		});
+                });
 		 	});
-                
-            
-                
+   
                 
 		 });
-
+			
 		 	$('#submit').live('click', function() { // catch the form's submit event
-                $('#brochure').validate();
-                if($('input[type="checkbox"]').is(':checked')){
-    
+                if($('input[type="checkbox"]').is(':checked')){    				
+                    
+                    $('#brochure .required').each(function(){
+                        if($(this).val() == '') {
+                            alert(msg_warning);
+                            warning = true;
+                        	event.preventDefault();
+                            return;
+                        }else{
+                            warning = false;
+                        }                       
+					});  alert(warning);
+                    if(warning == false){
                     // Send data to server through the ajax call
                     // action is functionality we want to call and outputJSON is our data
-                    $.ajax({url: 'check.php',
-                    /*data: {action : 'login', formData : $('#brochure').serialize()},*/
-                        type: 'post',
-                        async: 'true',
-                        dataType: 'json',
-                        beforeSend: function() {
-                        // This callback function will trigger before data is sent
-                        // $.mobile.showPageLoadingMsg(true); // This will show ajax spinner
-                    },
-                        complete: function() {
-                        // This callback function will trigger on data sent/received complete
-                        //$.mobile.hidePageLoadingMsg(); // This will hide ajax spinner
-                    },
-                        success: function (result) {
-                        if(result.status) {
-                            $.mobile.changePage("#second");
-                        } else {
-                            alert(msg_order_error_brochure);
-                        }
-                    },
-                        error: function (request,error) {
-                        // This callback function will trigger on unsuccessful action
-                        alert(msg_order_error);
+                        	$.ajax({url: 'http://www.framo.ch/framo/check.php',
+                                data: $('#brochure').serialize(),
+                                type: 'post',
+                                async: 'true',
+                                dataType: 'json',
+                                beforeSend: function() {
+                                // This callback function will trigger before data is sent
+                                    //$.mobile.showPageLoadingMsg(true); // This will show ajax spinner
+                                },
+                                complete: function() {
+                                // This callback function will trigger on data sent/received complete
+                                    //$.mobile.hidePageLoadingMsg(); // This will hide ajax spinner
+                                },
+                                success: function (result) {
+                                    if(result.status) {
+                                        $.mobile.changePage("#second");
+                                    } else {
+                                        alert(msg_order_error_brochure);
+                                    }
+                            	},
+                                error: function (request,error) {
+                                // This callback function will trigger on unsuccessful action
+                                alert(msg_order_error);
+                            }
+                        });   
                     }
-                    });
+                     
+ 
                 }else{
-                    alert("Bitte wählen Sie eine Broschüre");
+                    alert(msg_choose);
                 }
                 return false; // cancel original event to prevent form submitting
 			});
+            
+            
+            /* $('#pagetest').live('pagebeforeshow', function() {
+                var jsonURL = "http://www.framo.ch/framo/galleries.json";
+                	$.getJSON(jsonURL, function (json) {
+					var imgList= "";
+
+					$.each(json.gallery, function () {
+                        imgList += '<li id="'+ this.galleryTitle +'" data-theme="c" class="ui-btn ui-btn-icon-right ui-li ui-btn-hover-c ui-btn-down-c"><div class="ui-btn-inner ui-li"><div class="ui-btn-text"><a href="#pagegallery'+ this.num +'" id="'+ this.id +'" class="ui-link-inherit">'+ this.name +'</a></div><span class="ui-icon ui-icon-arrow-r"></span></div></li>';
+					});
+
+					$('#albums_test').append(imgList);
+				});
+            });*/
+            
+            
 		});
 
 	</script>
@@ -235,51 +303,7 @@
 
 <!-- HOME -->
 <div data-role="page" id="pagehome">
-	<script type="text/javascript">
-		$(document).ready(function(){
-			$.i18n.properties({
-								  name:'Messages',
-								  path:'bundle/',
-								  mode:'both',
-								  language:language_root,
-								  callback: function() {
-									  $('#msg_info,#msg_header_info').html($.i18n.prop('msg_info'));
-									  $('#msg_news,#msg_header_news').html($.i18n.prop('msg_news'));
-									  $('#msg_fotos,.msg_header_fotos').html($.i18n.prop('msg_fotos'));
-									  $('#msg_videos,#msg_header_videos').html($.i18n.prop('msg_videos'));
-									  $('#msg_qr,#msg_header_qr').html($.i18n.prop('msg_qr'));
-									  $('#msg_brochure,.msg_header_brochure').html($.i18n.prop('msg_brochure'));
-									  $('#msg_distributor,#msg_header_distributor').html($.i18n.prop('msg_distributor'));
-									  $('#msg_products').html($.i18n.prop('msg_products'));
-									  $('#msg_careguide').html($.i18n.prop('msg_careguide'));
-									  $('#msg_order').html($.i18n.prop('msg_order'));
-									  $('#msg_order_text').html($.i18n.prop('msg_order_text'));
-									  $('#msg_order_company').html($.i18n.prop('msg_order_company'));
-									  $('#msg_order_name').html($.i18n.prop('msg_order_name'));
-									  $('#msg_order_street').html($.i18n.prop('msg_order_street'));
-									  $('#msg_order_postcode').html($.i18n.prop('msg_order_postcode'));
-									  $('#msg_order_email').html($.i18n.prop('msg_order_email'));
-									  $('#msg_order_phone').html($.i18n.prop('msg_order_phone'));
-									  $('#msg_order_button').html($.i18n.prop('msg_order_button'));
-									  $('#msg_order_confirm').html($.i18n.prop('msg_order_confirm'));
-									  $('#msg_order_confirm_b').html($.i18n.prop('msg_order_confirm_b'));
-									  $('#msg_cat1').html($.i18n.prop('msg_cat1'));
-									  $('#msg_cat2').html($.i18n.prop('msg_cat2'));
-									  $('#msg_cat3').html($.i18n.prop('msg_cat3'));
-                                      $('#msg_cat31').html($.i18n.prop('msg_cat31'));
-									  $('#msg_cat4').html($.i18n.prop('msg_cat4'));
-									  $('#msg_cat5').html($.i18n.prop('msg_cat5'));
-									  $('#msg_cat6').html($.i18n.prop('msg_cat6'));
-									  $('#msg_cat7').html($.i18n.prop('msg_cat7'));
-									  $('#msg_cat8').html($.i18n.prop('msg_cat8'));
-									  $('#msg_cat9').html($.i18n.prop('msg_cat9'));
-									  $('#msg_cat10').html($.i18n.prop('msg_cat10'));
-                                      $('#msg_cat11').html($.i18n.prop('msg_cat11'));
-									  $('#msg_nonetwork').html($.i18n.prop('msg_nonetwork'));
-								  }
-							  });
-		});
-	</script>
+
 	<div id="header" data-position="inline">
 		<div class="horizon">
 			<img src="images/framo_logo.png"/>
@@ -296,11 +320,26 @@
 			<div class="ui-block-a"><a data-role="none" href="#pageqrscanner"><img src="images/icon_qrscanner.png" /><br /><span id="msg_qr"></span></a></div>
 			<div class="ui-block-b"><a data-role="none" href="#pagebrochure"><img src="images/icon_brochure.png" /><br /><span id="msg_brochure"></span></a></div>
 			<div class="ui-block-c"><a data-role="none" href="#pagedistributor"><img src="images/icon_distributor.png" /><br /><span id="msg_distributor"></span></a></div>
-
+			<!-- <div class="ui-block-c"><a data-role="none" href="#pagetest"><span id="msg_fotos"></span></a></div> -->
 		</div>
 	</div><!-- /content -->
 </div>
-
+<!-- TEST -->
+<div data-role="page" id="pagetest">
+	<div data-role="header">
+		<a href="#pagehome" class="back" ><img src="images/icon_arrow_back.png" /> </a>
+		<h1 id="msg_header_fotos"></h1>
+	</div>
+	<div data-role="content">
+        <div class="errormsg"><p></p></div>
+		<div id="albums_container" class="current">
+			<div class="loader" style="display:none;"></div>
+            <ul id="albums_test" data-role="listview"  data-corners="false" data-shadow="false">
+				
+			</ul>
+		</div>
+	</div>
+</div>
 <!-- INFO -->
 <div data-role="page" id="pageinfo">
 	<div data-role="header">
@@ -313,11 +352,15 @@
 			CH-1680 Romont</p>
 		<p><a href="tel:0266519651">Tel. 026 651 96 51</a><br />
 			<a href="tel:0266519650">Fax. 026 651 96 50</a><br /><br />
-			<a href="mailto:info@framo.ch">E-Mail: info@framo.ch</a><br />
-			<a href="http://www.framo.ch" onclick="window.open(this.href,'_system'); return false;">www.framo.ch</a>
+			<a href="mailto:info@framo.ch" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes'); return false;">E-Mail: info@framo.ch</a><br />
+			<a href="http://www.framo.ch" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes'); return false;">www.framo.ch</a>
 		</p>
-		<p class="version">Version: 1.0.0 - 16.05.2014</p>
-
+ <!--       <div class="errormsg"><p></p></div>
+        <p><a href="#" onclick="check_update()" data-role="button" id="msg_check_update"></a></p>
+        <p id="msg_noupdate"></p>
+        <p id="feed"><a href="#" onclick="update()" data-role="button" id="msg_update"></a></p> -->
+		<p class="version">Version: 1.0.0 - 12.06.2014</p>
+ 		
 	</div>
 </div>
 
@@ -341,8 +384,7 @@
 		<a href="#pagehome" class="back" ><img src="images/icon_arrow_back.png" /> </a>
 		<h1 class="msg_header_fotos"></h1>
 	</div>
-	<div data-role="content">
-        <div class="errormsg"><p></p></div>
+	<div data-role="content">       
 		<div id="albums_container" class="current">
 
 			<div class="loader" style="display:none;"></div>
@@ -374,31 +416,31 @@
 
 			<div class="gallery-row">
 
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Artissimo_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Artissimo_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Arto_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Arto_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Bravo_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Bravo_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Cora_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Cora_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Creation_2_gruen_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Creation_2_gruen_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Creation_2_violett_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Creation_2_violett_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Creation_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Creation_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Esprit_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Esprit_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Flexi_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Flexi_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Flexi_Metall_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Flexi_Metall_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Flip_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Flip_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Florida_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Florida_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Glano_Classic_2_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Classic_2_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Glano_Espace_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Espace_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Glano_Mystic_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Mystic_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Glano_Noblesse_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Noblesse_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Onda_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Onda_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Palmira_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Palmira_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Procasa_Uno_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Procasa_Uno_CRH_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Publico_Gastro_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Publico_Gastro_FRAMO_thumbs.jpg" /></a></div>               				
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Ragazza_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Ragazza_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Riviera_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Riviera_CRH_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Stilo_Stilo_2_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Stilo_Stilo_2_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Style_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Style_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/01_Badmoebel/Vetro_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Vetro_CRH_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/01_Badmoebel/Artissimo_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Artissimo_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Arto_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Arto_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Bravo_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Bravo_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Cora_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Cora_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Creation_2_gruen_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Creation_2_gruen_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Creation_2_violett_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Creation_2_violett_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Creation_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Creation_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Esprit_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Esprit_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Flexi_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Flexi_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Flexi_Metall_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Flexi_Metall_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Flip_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Flip_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Florida_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Florida_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Glano_Classic_2_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Classic_2_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Glano_Espace_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Espace_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Glano_Mystic_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Mystic_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Glano_Noblesse_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Glano_Noblesse_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Onda_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Onda_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Palmira_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Palmira_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Procasa_Uno_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Procasa_Uno_CRH_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/01_Badmoebel/Publico_Gastro_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Publico_Gastro_FRAMO_thumbs.jpg" /></a></div>               				
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Ragazza_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Ragazza_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Riviera_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Riviera_CRH_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/01_Badmoebel/Stilo_Stilo_2_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Stilo_Stilo_2_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Style_FRAMO.jpg" rel="external"><img src="thumbs/01_Badmoebel/Style_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/01_Badmoebel/Vetro_CRH.jpg" rel="external"><img src="thumbs/01_Badmoebel/Vetro_CRH_thumbs.jpg" /></a></div>
 			</div>
 
 
@@ -417,24 +459,24 @@
 
 			<div class="gallery-row">
 
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Basic_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Basic_01_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Basic_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Basic_02_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Claro_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Claro_01_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Claro_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Claro_02_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Confort_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Confort_01_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Confort_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Confort_02_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Maxi_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Maxi_01_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Maxi_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Maxi_02_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Prima_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Prima_01_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Prima_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Prima_02_FRAMO_thumbs.jpg" /></a></div>				
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Slim_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Slim_01_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Slim_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Slim_02_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Smart_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Smart_01_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Smart_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Smart_02_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Stella_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Stella_01_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Stella_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Stella_02_FRAMO_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Universel_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Universel_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/02_Unterbaumoebel/Universel_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Universel_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Basic_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Basic_01_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Basic_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Basic_02_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Claro_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Claro_01_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Claro_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Claro_02_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Confort_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Confort_01_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Confort_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Confort_02_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Maxi_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Maxi_01_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Maxi_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Maxi_02_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Prima_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Prima_01_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Prima_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Prima_02_FRAMO_thumbs.jpg" /></a></div>				
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Slim_01_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Slim_01_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Slim_02_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Slim_02_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Smart_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Smart_01_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Smart_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Smart_02_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Stella_01_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Stella_01_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Stella_02_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Stella_02_FRAMO_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/02_Unterbaumoebel/Universel_CRH.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Universel_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/02_Unterbaumoebel/Universel_FRAMO.jpg" rel="external"><img src="thumbs/02_Unterbaumoebel/Universel_FRAMO_thumbs.jpg" /></a></div>
 			</div>
 
 
@@ -453,12 +495,12 @@
 
 			<div class="gallery-row">
 
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/03_Schraenke/Flexi_CRH.jpg" rel="external"><img src="thumbs/03_Schraenke/Flexi_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/03_Schraenke/Flexi_Metall_Flexi_metallique_CRH.jpg" rel="external"><img src="thumbs/03_Schraenke/Flexi_Metall_Flexi_metallique_CRH_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/03_Schraenke/Modulo_FRAMO.jpg" rel="external"><img src="thumbs/03_Schraenke/Modulo_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/03_Schraenke/Modulo_Metall_Modulo_metallique_FRAMO.jpg" rel="external"><img src="thumbs/03_Schraenke/Modulo_Metall_Modulo_metallique_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/03_Schraenke/Selection_FRAMO.jpg" rel="external"><img src="thumbs/03_Schraenke/Selection_FRAMO_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/03_Schraenke/Spacio_CRH.jpg" rel="external"><img src="thumbs/03_Schraenke/Spacio_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/03_Schraenke/Flexi_CRH.jpg" rel="external"><img src="thumbs/03_Schraenke/Flexi_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/03_Schraenke/Flexi_Metall_Flexi_metallique_CRH.jpg" rel="external"><img src="thumbs/03_Schraenke/Flexi_Metall_Flexi_metallique_CRH_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/03_Schraenke/Modulo_FRAMO.jpg" rel="external"><img src="thumbs/03_Schraenke/Modulo_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/03_Schraenke/Modulo_Metall_Modulo_metallique_FRAMO.jpg" rel="external"><img src="thumbs/03_Schraenke/Modulo_Metall_Modulo_metallique_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/03_Schraenke/Selection_FRAMO.jpg" rel="external"><img src="thumbs/03_Schraenke/Selection_FRAMO_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/03_Schraenke/Spacio_CRH.jpg" rel="external"><img src="thumbs/03_Schraenke/Spacio_CRH_thumbs.jpg" /></a></div>
 			</div>
 
 
@@ -477,28 +519,28 @@
 
 			<div class="gallery-row">
 
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/creation2.jpg" rel="external"><img src="thumbs/031_Spiegel/creation2_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/creation2_2.jpg" rel="external"><img src="thumbs/031_Spiegel/creation2_2_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/elite.jpg" rel="external"><img src="thumbs/031_Spiegel/elite_thumbs.jpg" /></a></div>
-            	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/elite_2.jpg" rel="external"><img src="thumbs/031_Spiegel/elite_2_thumbs.jpg" /></a></div>
-            	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/Glano.jpg" rel="external"><img src="thumbs/031_Spiegel/Glano_thumbs.jpg" /></a></div>
-            	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/helios.jpg" rel="external"><img src="thumbs/031_Spiegel/helios_thumbs.jpg" /></a></div>
-            	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/helios_2.jpg" rel="external"><img src="thumbs/031_Spiegel/helios_2_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/lena.jpg" rel="external"><img src="thumbs/031_Spiegel/lena_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/mezzo.jpg" rel="external"><img src="thumbs/031_Spiegel/mezzo_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/Milano.jpg" rel="external"><img src="thumbs/031_Spiegel/Milano_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/mystic.jpg" rel="external"><img src="thumbs/031_Spiegel/mystic_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/Palmira.jpg" rel="external"><img src="thumbs/031_Spiegel/Palmira_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/roma.jpg" rel="external"><img src="thumbs/031_Spiegel/roma_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/splendid.jpg" rel="external"><img src="thumbs/031_Spiegel/splendid_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/viva_01.jpg" rel="external"><img src="thumbs/031_Spiegel/viva_01_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/viva_02.jpg" rel="external"><img src="thumbs/031_Spiegel/viva_02_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/viva_3.jpg" rel="external"><img src="thumbs/031_Spiegel/viva_3_thumbs.jpg" /></a></div>
-                <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/viva_4.jpg" rel="external"><img src="thumbs/031_Spiegel/viva_4_thumbs.jpg" /></a></div>
-            	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/wave_01.jpg" rel="external"><img src="thumbs/031_Spiegel/wave_01_thumbs.jpg" /></a></div>
-            	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/wave_02.jpg" rel="external"><img src="thumbs/031_Spiegel/wave_02_thumbs.jpg" /></a></div>
-            	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/xenia.jpg" rel="external"><img src="thumbs/031_Spiegel/xenia_thumbs.jpg" /></a></div>
-            	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/031_Spiegel/xenia_2.jpg" rel="external"><img src="thumbs/031_Spiegel/xenia_2_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/031_Spiegel/creation2.jpg" rel="external"><img src="thumbs/031_Spiegel/creation2_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/031_Spiegel/creation2_2.jpg" rel="external"><img src="thumbs/031_Spiegel/creation2_2_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/031_Spiegel/elite.jpg" rel="external"><img src="thumbs/031_Spiegel/elite_thumbs.jpg" /></a></div>
+            	<div class="gallery-item"><a href="photos/031_Spiegel/elite_2.jpg" rel="external"><img src="thumbs/031_Spiegel/elite_2_thumbs.jpg" /></a></div>
+            	<div class="gallery-item"><a href="photos/031_Spiegel/Glano.jpg" rel="external"><img src="thumbs/031_Spiegel/Glano_thumbs.jpg" /></a></div>
+            	<div class="gallery-item"><a href="photos/031_Spiegel/helios.jpg" rel="external"><img src="thumbs/031_Spiegel/helios_thumbs.jpg" /></a></div>
+            	<div class="gallery-item"><a href="photos/031_Spiegel/helios_2.jpg" rel="external"><img src="thumbs/031_Spiegel/helios_2_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/lena.jpg" rel="external"><img src="thumbs/031_Spiegel/lena_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/mezzo.jpg" rel="external"><img src="thumbs/031_Spiegel/mezzo_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/Milano.jpg" rel="external"><img src="thumbs/031_Spiegel/Milano_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/mystic.jpg" rel="external"><img src="thumbs/031_Spiegel/mystic_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/Palmira.jpg" rel="external"><img src="thumbs/031_Spiegel/Palmira_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/roma.jpg" rel="external"><img src="thumbs/031_Spiegel/roma_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/splendid.jpg" rel="external"><img src="thumbs/031_Spiegel/splendid_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/viva_01.jpg" rel="external"><img src="thumbs/031_Spiegel/viva_01_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/viva_02.jpg" rel="external"><img src="thumbs/031_Spiegel/viva_02_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/viva_3.jpg" rel="external"><img src="thumbs/031_Spiegel/viva_3_thumbs.jpg" /></a></div>
+                <div class="gallery-item"><a href="photos/031_Spiegel/viva_4.jpg" rel="external"><img src="thumbs/031_Spiegel/viva_4_thumbs.jpg" /></a></div>
+            	<div class="gallery-item"><a href="photos/031_Spiegel/wave_01.jpg" rel="external"><img src="thumbs/031_Spiegel/wave_01_thumbs.jpg" /></a></div>
+            	<div class="gallery-item"><a href="photos/031_Spiegel/wave_02.jpg" rel="external"><img src="thumbs/031_Spiegel/wave_02_thumbs.jpg" /></a></div>
+            	<div class="gallery-item"><a href="photos/031_Spiegel/xenia.jpg" rel="external"><img src="thumbs/031_Spiegel/xenia_thumbs.jpg" /></a></div>
+            	<div class="gallery-item"><a href="photos/031_Spiegel/xenia_2.jpg" rel="external"><img src="thumbs/031_Spiegel/xenia_2_thumbs.jpg" /></a></div>
             </div>
 
 
@@ -515,13 +557,10 @@
 	<div data-role="content">
 		<div class="gallery">
 
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Unico_Pfau_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Pfau_FRAMO_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Unico_Sujet_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Sujet_FRAMO_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Unico_Wald_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Wald_FRAMO_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/04_Design-line/Wave_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Wave_FRAMO_thumbs.jpg" /></a></div>
-
-
-
+			<div class="gallery-item"><a href="photos/04_Design-line/Unico_Pfau_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Pfau_FRAMO_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/04_Design-line/Unico_Sujet_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Sujet_FRAMO_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/04_Design-line/Unico_Wald_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Unico_Wald_FRAMO_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/04_Design-line/Wave_FRAMO.jpg" rel="external"><img src="thumbs/04_Design-line/Wave_FRAMO_thumbs.jpg" /></a></div>
 		</div>
 	</div>
 </div>
@@ -534,10 +573,10 @@
 	<div data-role="content">
 		<div class="gallery">
 			<div class="gallery-row">
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/05_Wohnbereich/Ankleide-Dressing_Dressing.jpg" rel="external"><img src="thumbs/05_Wohnbereich/Ankleide-Dressing_Dressing_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/05_Wohnbereich/Eckloesungen_Armoire_dangle.jpg" rel="external"><img src="thumbs/05_Wohnbereich/Eckloesungen_Armoire_dangle_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/05_Wohnbereich/Schiebetueren_Portes_coulissantes.jpg" rel="external"><img src="thumbs/05_Wohnbereich/Schiebetueren_Portes_coulissantes_thumbs.jpg" /></a></div>
-				<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/05_Wohnbereich/Sonderanfertigungen_Executions_speciales.jpg" rel="external"><img src="thumbs/05_Wohnbereich/Sonderanfertigungen_Executions_speciales_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/05_Wohnbereich/Ankleide-Dressing_Dressing.jpg" rel="external"><img src="thumbs/05_Wohnbereich/Ankleide-Dressing_Dressing_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/05_Wohnbereich/Eckloesungen_Armoire_dangle.jpg" rel="external"><img src="thumbs/05_Wohnbereich/Eckloesungen_Armoire_dangle_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/05_Wohnbereich/Schiebetueren_Portes_coulissantes.jpg" rel="external"><img src="thumbs/05_Wohnbereich/Schiebetueren_Portes_coulissantes_thumbs.jpg" /></a></div>
+				<div class="gallery-item"><a href="photos/05_Wohnbereich/Sonderanfertigungen_Executions_speciales.jpg" rel="external"><img src="thumbs/05_Wohnbereich/Sonderanfertigungen_Executions_speciales_thumbs.jpg" /></a></div>
 			</div>
 
 
@@ -553,7 +592,7 @@
 	<div data-role="content">
 		<div class="gallery">
 
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/06_Waschraumloesung/Waschraumloesung.jpg" rel="external"><img src="thumbs/06_Waschraumloesung/Waschraumloesung_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/06_Waschraumloesung/Waschraumloesung.jpg" rel="external"><img src="thumbs/06_Waschraumloesung/Waschraumloesung_thumbs.jpg" /></a></div>
 
 
 
@@ -569,14 +608,14 @@
 	<div data-role="content">
 		<div class="gallery">
 
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_01.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_01_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_02.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_02_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_03.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_03_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_04.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_04_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_05.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_05_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_06.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_06_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_07.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_07_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_08.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_08_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_01.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_01_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_02.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_02_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_03.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_03_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_04.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_04_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_05.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_05_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_06.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_06_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_07.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_07_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/07_Oeffentlicher-Raum/Oeffentlicher_Raum_08.jpg" rel="external"><img src="thumbs/07_Oeffentlicher-Raum/Oeffentlicher_Raum_08_thumbs.jpg" /></a></div>
 
 
 		</div>
@@ -591,69 +630,69 @@
 	<div data-role="content">
 		<div class="gallery">
 
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR001_Blanc-Weiss.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR001_Blanc-Weiss_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR006-Rubinrot-Rougerubis.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR006-Rubinrot-Rougerubis_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR007-Schwarz-Futur-noir.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR007-Schwarz-Futur-noir_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR008-Fantaisie-brun-Fantasie-Braun.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR008-Fantaisie-brun-Fantasie-Braun_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR010-Sable-gris-Sandgrau.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR010-Sable-gris-Sandgrau_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR012-Orchidea-violet-Orchidea-Violett.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR012-Orchidea-violet-Orchidea-Violett_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR013-Olivier-brun-Olivenbaum-Braun.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR013-Olivier-brun-Olivenbaum-Braun_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR014-Iguane-Leguan.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR014-Iguane-Leguan_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR015-Anthracit-metal-Anthrazit-Metal.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR015-Anthracit-metal-Anthrazit-Metal_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR019-Moca.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR019-Moca_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR022-Laser-lucido.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR022-Laser-lucido_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/BR023-Titanio.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR023-Titanio_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA109-Champagne-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA109-Champagne-brillant_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA750-Antrazit-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA750-Antrazit-brillant_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA751-Antrazit-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA751-Antrazit-matt_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA758-Capuccino-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA758-Capuccino-brillant_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA759-Capuccino-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA759-Capuccino-matt_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA809-Terredombre-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA809-Terredombre-brillant_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA812-Terredombre-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA812-Terredombre-matt_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA902-Noir-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA902-Noir-brillant_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA907-Noir-matt-Schwarz-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA907-Noir-matt-Schwarz-matt_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA934-Blanc-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA934-Blanc-brillant_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/LA966-Blanc-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA966-Blanc-matt_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO001-Blanc-Weiss.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO001-Blanc-Weiss_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO105-Argent-Silber.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO105-Argent-Silber_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO106-Anthracite-Anthrazit.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO106-Anthracite-Anthrazit_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO107-Chene-Eiche.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO107-Chene-Eiche_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO108-Wenge.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO108-Wenge_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO111-Rouge-Corail-Korallrot.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO111-Rouge-Corail-Korallrot_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO113-Prunier.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO113-Prunier_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO114_Laser.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO114_Laser_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO115-Cedre-fonce-Zeder-dunkel.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO115-Cedre-fonce-Zeder-dunkel_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO116-Chamonix.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO116-Chamonix_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO120-Jaune-Gelb.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO120-Jaune-Gelb_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO140-London.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO140-London_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO141-Structure-blanc-Struktur-weiss.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO141-Structure-blanc-Struktur-weiss_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO142-Structure-graphite-Struktur-graphit.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO142-Structure-graphite-Struktur-graphit_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO143-Nero.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO143-Nero_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO144-Beige.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO144-Beige_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO145-Violet-Violett.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO145-Violet-Violett_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO146-Olivier-Olivenbaum.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO146-Olivier-Olivenbaum.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO147-Platine-Platin.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO147-Platine-Platin_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO148-Orme-Ulme.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO148-Orme-Ulme_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO149-Cerisier-Piemont-Kirsche-Piemont.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO149-Cerisier-Piemont-Kirsche-Piemont_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO150-Cordoba.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO150-Cordoba_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO151-Rosso-Cigliegia.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO151-Rosso-Cigliegia_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO152-Rosso-di-Parma.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO152-Rosso-di-Parma_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO153-Verde-Barbado.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO153-Verde-Barbado_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO154-Verde-Caraibico.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO154-Verde-Caraibico_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO155-Blu-cielo.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO155-Blu-cielo_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO156-Blue-reale.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO156-Blue-reale_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO157-Marrone-Galapago.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO157-Marrone-Galapago_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO158-Marrone-Castania.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO158-Marrone-Castania_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO159-Marrone-Scuro.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO159-Marrone-Scuro_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO160-Avorio.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO160-Avorio_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO161-Deserto.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO161-Deserto_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO162-Grigio-Pietra.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO162-Grigio-Pietra_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO164-Orange-Campari.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO164-Orange-CamparI_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO166-Tartufo.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO166-Tartufo_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO167_Bianco-Stoned.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO167_Bianco-Stoned_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO168_Topo_3D.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO168_Topo_3D_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO169_Fumo_3D.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO169_Fumo_3D_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/08_3D-Farbvisualisierung/MO170_ElmBrown_3D.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO170_ElmBrown_3D_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR001_Blanc-Weiss.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR001_Blanc-Weiss_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR006-Rubinrot-Rougerubis.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR006-Rubinrot-Rougerubis_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR007-Schwarz-Futur-noir.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR007-Schwarz-Futur-noir_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR008-Fantaisie-brun-Fantasie-Braun.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR008-Fantaisie-brun-Fantasie-Braun_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR010-Sable-gris-Sandgrau.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR010-Sable-gris-Sandgrau_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR012-Orchidea-violet-Orchidea-Violett.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR012-Orchidea-violet-Orchidea-Violett_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR013-Olivier-brun-Olivenbaum-Braun.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR013-Olivier-brun-Olivenbaum-Braun_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR014-Iguane-Leguan.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR014-Iguane-Leguan_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR015-Anthracit-metal-Anthrazit-Metal.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR015-Anthracit-metal-Anthrazit-Metal_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR019-Moca.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR019-Moca_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR022-Laser-lucido.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR022-Laser-lucido_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/BR023-Titanio.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/BR023-Titanio_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA109-Champagne-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA109-Champagne-brillant_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA750-Antrazit-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA750-Antrazit-brillant_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA751-Antrazit-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA751-Antrazit-matt_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA758-Capuccino-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA758-Capuccino-brillant_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA759-Capuccino-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA759-Capuccino-matt_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA809-Terredombre-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA809-Terredombre-brillant_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA812-Terredombre-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA812-Terredombre-matt_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA902-Noir-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA902-Noir-brillant_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA907-Noir-matt-Schwarz-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA907-Noir-matt-Schwarz-matt_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA934-Blanc-brillant.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA934-Blanc-brillant_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/LA966-Blanc-matt.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/LA966-Blanc-matt_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO001-Blanc-Weiss.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO001-Blanc-Weiss_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO105-Argent-Silber.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO105-Argent-Silber_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO106-Anthracite-Anthrazit.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO106-Anthracite-Anthrazit_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO107-Chene-Eiche.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO107-Chene-Eiche_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO108-Wenge.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO108-Wenge_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO111-Rouge-Corail-Korallrot.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO111-Rouge-Corail-Korallrot_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO113-Prunier.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO113-Prunier_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO114_Laser.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO114_Laser_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO115-Cedre-fonce-Zeder-dunkel.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO115-Cedre-fonce-Zeder-dunkel_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO116-Chamonix.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO116-Chamonix_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO120-Jaune-Gelb.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO120-Jaune-Gelb_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO140-London.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO140-London_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO141-Structure-blanc-Struktur-weiss.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO141-Structure-blanc-Struktur-weiss_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO142-Structure-graphite-Struktur-graphit.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO142-Structure-graphite-Struktur-graphit_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO143-Nero.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO143-Nero_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO144-Beige.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO144-Beige_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO145-Violet-Violett.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO145-Violet-Violett_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO146-Olivier-Olivenbaum.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO146-Olivier-Olivenbaum.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO147-Platine-Platin.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO147-Platine-Platin_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO148-Orme-Ulme.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO148-Orme-Ulme_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO149-Cerisier-Piemont-Kirsche-Piemont.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO149-Cerisier-Piemont-Kirsche-Piemont_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO150-Cordoba.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO150-Cordoba_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO151-Rosso-Cigliegia.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO151-Rosso-Cigliegia_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO152-Rosso-di-Parma.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO152-Rosso-di-Parma_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO153-Verde-Barbado.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO153-Verde-Barbado_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO154-Verde-Caraibico.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO154-Verde-Caraibico_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO155-Blu-cielo.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO155-Blu-cielo_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO156-Blue-reale.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO156-Blue-reale_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO157-Marrone-Galapago.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO157-Marrone-Galapago_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO158-Marrone-Castania.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO158-Marrone-Castania_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO159-Marrone-Scuro.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO159-Marrone-Scuro_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO160-Avorio.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO160-Avorio_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO161-Deserto.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO161-Deserto_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO162-Grigio-Pietra.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO162-Grigio-Pietra_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO164-Orange-Campari.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO164-Orange-CamparI_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO166-Tartufo.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO166-Tartufo_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO167_Bianco-Stoned.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO167_Bianco-Stoned_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO168_Topo_3D.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO168_Topo_3D_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO169_Fumo_3D.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO169_Fumo_3D_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/08_3D-Farbvisualisierung/MO170_ElmBrown_3D.jpg" rel="external"><img src="thumbs/08_3D-Farbvisualisierung/MO170_ElmBrown_3D_thumbs.jpg" /></a></div>
 		</div>
 	</div>
 </div>
@@ -665,42 +704,42 @@
 	</div>
 	<div data-role="content">
 		<div class="gallery">
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Capri_44mm.jpg" rel="external"><img src="thumbs/09_Griffe/Capri_44mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Capri_140mm.jpg" rel="external"><img src="thumbs/09_Griffe/Capri_140mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Chic_184mm.jpg" rel="external"><img src="thumbs/09_Griffe/Chic_184mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Cristal_170_330mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Cristal_170_330mm_S-Sizes_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Cubic_50mm.jpg" rel="external"><img src="thumbs/09_Griffe/Cubic_50mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Doria_50mm.jpg" rel="external"><img src="thumbs/09_Griffe/Doria_50mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Eddy_75mm.jpg" rel="external"><img src="thumbs/09_Griffe/Eddy_75mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Frida_148mm.jpg" rel="external"><img src="thumbs/09_Griffe/Frida_148mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/HA_172-652mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/HA_172-652mm_S-Sizes_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Jany_141mm.jpg" rel="external"><img src="thumbs/09_Griffe/Jany_141mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/LB_LM_132mm.jpg" rel="external"><img src="thumbs/09_Griffe/LB_LM_132mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Lea_252-764mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Lea_252-764mm_S-Sizes_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Leon_30mm.jpg" rel="external"><img src="thumbs/09_Griffe/Leon_30mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Line_200mm.jpg" rel="external"><img src="thumbs/09_Griffe/Line_200mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Luna_99_144mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Luna_99_144mm_S-Sizes_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Lux_34,6mm.jpg" rel="external"><img src="thumbs/09_Griffe/Lux_34,6mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Nova_133mm.jpg" rel="external"><img src="thumbs/09_Griffe/Nova_133mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Paola_145mm.jpg" rel="external"><img src="thumbs/09_Griffe/Paola_145mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Perfo_168mm.jpg" rel="external"><img src="thumbs/09_Griffe/Perfo_168mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Pure_138mm.jpg" rel="external"><img src="thumbs/09_Griffe/Pure_138mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Smart_60mm.jpg" rel="external"><img src="thumbs/09_Griffe/Smart_60mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Soft_178mm.jpg" rel="external"><img src="thumbs/09_Griffe/Soft_178mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Star_50mm_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Star_50mm_S-Edition_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Star_68mm_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Star_68mm_S-Edition_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Stone_98mm_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stone_98mm_S-Edition_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Stripes_148mm_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_148mm_S-Edition_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Stripes_150mm_oval_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_150mm_oval_S-Edition_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Stripes_179mm_rechteckig_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_179mm_rechteckig_S-Edition_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Stripes_82mm_eckig_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_82mm_eckig_S-Edition_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Stripes_83mm_rund_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_83mm_rund_S-Edition_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Tina_170_330mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Tina_170_330mm_S-Sizes_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Torino_210_370mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Torino_210_370mm_S-Sizes_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Trend_210-1140mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Trend_210-1140mm_S-Sizes_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/UB_136-456mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/UB_136-456mm_S-Sizes_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Zebra_200mm.jpg" rel="external"><img src="thumbs/09_Griffe/Zebra_200mm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/09_Griffe/Zero_70mm.jpg" rel="external"><img src="thumbs/09_Griffe/Zero_70mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Capri_44mm.jpg" rel="external"><img src="thumbs/09_Griffe/Capri_44mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Capri_140mm.jpg" rel="external"><img src="thumbs/09_Griffe/Capri_140mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Chic_184mm.jpg" rel="external"><img src="thumbs/09_Griffe/Chic_184mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Cristal_170_330mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Cristal_170_330mm_S-Sizes_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Cubic_50mm.jpg" rel="external"><img src="thumbs/09_Griffe/Cubic_50mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Doria_50mm.jpg" rel="external"><img src="thumbs/09_Griffe/Doria_50mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Eddy_75mm.jpg" rel="external"><img src="thumbs/09_Griffe/Eddy_75mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Frida_148mm.jpg" rel="external"><img src="thumbs/09_Griffe/Frida_148mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/HA_172-652mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/HA_172-652mm_S-Sizes_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Jany_141mm.jpg" rel="external"><img src="thumbs/09_Griffe/Jany_141mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/LB_LM_132mm.jpg" rel="external"><img src="thumbs/09_Griffe/LB_LM_132mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Lea_252-764mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Lea_252-764mm_S-Sizes_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Leon_30mm.jpg" rel="external"><img src="thumbs/09_Griffe/Leon_30mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Line_200mm.jpg" rel="external"><img src="thumbs/09_Griffe/Line_200mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Luna_99_144mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Luna_99_144mm_S-Sizes_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Lux_34,6mm.jpg" rel="external"><img src="thumbs/09_Griffe/Lux_34,6mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Nova_133mm.jpg" rel="external"><img src="thumbs/09_Griffe/Nova_133mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Paola_145mm.jpg" rel="external"><img src="thumbs/09_Griffe/Paola_145mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Perfo_168mm.jpg" rel="external"><img src="thumbs/09_Griffe/Perfo_168mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Pure_138mm.jpg" rel="external"><img src="thumbs/09_Griffe/Pure_138mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Smart_60mm.jpg" rel="external"><img src="thumbs/09_Griffe/Smart_60mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Soft_178mm.jpg" rel="external"><img src="thumbs/09_Griffe/Soft_178mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Star_50mm_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Star_50mm_S-Edition_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Star_68mm_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Star_68mm_S-Edition_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Stone_98mm_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stone_98mm_S-Edition_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Stripes_148mm_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_148mm_S-Edition_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Stripes_150mm_oval_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_150mm_oval_S-Edition_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Stripes_179mm_rechteckig_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_179mm_rechteckig_S-Edition_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Stripes_82mm_eckig_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_82mm_eckig_S-Edition_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Stripes_83mm_rund_S-Edition.jpg" rel="external"><img src="thumbs/09_Griffe/Stripes_83mm_rund_S-Edition_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Tina_170_330mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Tina_170_330mm_S-Sizes_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Torino_210_370mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Torino_210_370mm_S-Sizes_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Trend_210-1140mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/Trend_210-1140mm_S-Sizes_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/UB_136-456mm_S-Sizes.jpg" rel="external"><img src="thumbs/09_Griffe/UB_136-456mm_S-Sizes_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Zebra_200mm.jpg" rel="external"><img src="thumbs/09_Griffe/Zebra_200mm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/09_Griffe/Zero_70mm.jpg" rel="external"><img src="thumbs/09_Griffe/Zero_70mm_thumbs.jpg" /></a></div>
 		</div>
 	</div>
 </div>
@@ -712,11 +751,11 @@
 	</div>
 	<div data-role="content">
 		<div class="gallery">
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/10_Handtuchhalter/Chic_60-100cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Chic_60-100cm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/10_Handtuchhalter/Daesy_38cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Daesy_38cm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/10_Handtuchhalter/Fin_26-40cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Fin_26-40cm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/10_Handtuchhalter/Galaxy_38cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Galaxy_38cm_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/10_Handtuchhalter/Linear_30_38cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Linear_30_38cm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/10_Handtuchhalter/Chic_60-100cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Chic_60-100cm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/10_Handtuchhalter/Daesy_38cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Daesy_38cm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/10_Handtuchhalter/Fin_26-40cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Fin_26-40cm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/10_Handtuchhalter/Galaxy_38cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Galaxy_38cm_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/10_Handtuchhalter/Linear_30_38cm.jpg" rel="external"><img src="thumbs/10_Handtuchhalter/Linear_30_38cm_thumbs.jpg" /></a></div>
 
 		</div>
 	</div>
@@ -730,29 +769,28 @@
 	<div data-role="content">
 		<div class="gallery">
 		
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/dana.jpg" rel="external"><img src="thumbs/11_Waschbecken/dana_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/eleganza.jpg" rel="external"><img src="thumbs/11_Waschbecken/eleganza_thumbs.jpg" /></a></div>
-			<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/elia.jpg" rel="external"><img src="thumbs/11_Waschbecken/elia_thumbs.jpg" /></a></div>		
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/graziosa.jpg" rel="external"><img src="thumbs/11_Waschbecken/graziosa_thumbs.jpg" /></a></div>
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/lino.jpg" rel="external"><img src="thumbs/11_Waschbecken/lino_thumbs.jpg" /></a></div>
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/lino2.jpg" rel="external"><img src="thumbs/11_Waschbecken/lino2.jpg" /></a></div>
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/mio.jpg" rel="external"><img src="thumbs/11_Waschbecken/mio_thumbs.jpg" /></a></div>
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/mira.jpg" rel="external"><img src="thumbs/11_Waschbecken/mira_thumbs.jpg" /></a></div>
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/mira2.jpg" rel="external"><img src="thumbs/11_Waschbecken/mira2_thumbs.jpg" /></a></div>
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/mona.jpg" rel="external"><img src="thumbs/11_Waschbecken/mona_thumbs.jpg" /></a></div>
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/nevio.jpg" rel="external"><img src="thumbs/11_Waschbecken/nevio_thumbs.jpg" /></a></div>
-        	<div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/pietra.jpg" rel="external"><img src="thumbs/11_Waschbecken/pietra_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/quadro.jpg" rel="external"><img src="thumbs/11_Waschbecken/quadro_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/quadro_brillant.jpg" rel="external"><img src="thumbs/11_Waschbecken/quadro_brillant_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/quadro_matt.jpg" rel="external"><img src="thumbs/11_Waschbecken/quadro_matt_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/rondo.jpg" rel="external"><img src="thumbs/11_Waschbecken/rondo_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/soft.jpg" rel="external"><img src="thumbs/11_Waschbecken/soft_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/soft_brillant.jpg" rel="external"><img src="thumbs/11_Waschbecken/soft_brillant_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/soft_matt.jpg" rel="external"><img src="thumbs/11_Waschbecken/soft_matt_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/solito.jpg" rel="external"><img src="thumbs/11_Waschbecken/solito_thumbs.jpg" /></a></div>
-            <div class="gallery-item"><a href="http://www.framo.ch/framo/photos/11_Waschbecken/spirito.jpg" rel="external"><img src="thumbs/11_Waschbecken/spirito_thumbs.jpg" /></a></div>
-            
-        </div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/dana.jpg" rel="external"><img src="thumbs/11_Waschbecken/dana_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/11_Waschbecken/eleganza.jpg" rel="external"><img src="thumbs/11_Waschbecken/eleganza_thumbs.jpg" /></a></div>
+			<div class="gallery-item"><a href="photos/11_Waschbecken/elia.jpg" rel="external"><img src="thumbs/11_Waschbecken/elia_thumbs.jpg" /></a></div>		
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/graziosa.jpg" rel="external"><img src="thumbs/11_Waschbecken/graziosa_thumbs.jpg" /></a></div>
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/lino.jpg" rel="external"><img src="thumbs/11_Waschbecken/lino_thumbs.jpg" /></a></div>
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/lino2.jpg" rel="external"><img src="thumbs/11_Waschbecken/lino2.jpg" /></a></div>
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/mio.jpg" rel="external"><img src="thumbs/11_Waschbecken/mio_thumbs.jpg" /></a></div>
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/mira.jpg" rel="external"><img src="thumbs/11_Waschbecken/mira_thumbs.jpg" /></a></div>
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/mira2.jpg" rel="external"><img src="thumbs/11_Waschbecken/mira2_thumbs.jpg" /></a></div>
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/mona.jpg" rel="external"><img src="thumbs/11_Waschbecken/mona_thumbs.jpg" /></a></div>
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/nevio.jpg" rel="external"><img src="thumbs/11_Waschbecken/nevio_thumbs.jpg" /></a></div>
+        	<div class="gallery-item"><a href="photos/11_Waschbecken/pietra.jpg" rel="external"><img src="thumbs/11_Waschbecken/pietra_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/quadro.jpg" rel="external"><img src="thumbs/11_Waschbecken/quadro_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/quadro_brillant.jpg" rel="external"><img src="thumbs/11_Waschbecken/quadro_brillant_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/quadro_matt.jpg" rel="external"><img src="thumbs/11_Waschbecken/quadro_matt_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/rondo.jpg" rel="external"><img src="thumbs/11_Waschbecken/rondo_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/soft.jpg" rel="external"><img src="thumbs/11_Waschbecken/soft_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/soft_brillant.jpg" rel="external"><img src="thumbs/11_Waschbecken/soft_brillant_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/soft_matt.jpg" rel="external"><img src="thumbs/11_Waschbecken/soft_matt_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/solito.jpg" rel="external"><img src="thumbs/11_Waschbecken/solito_thumbs.jpg" /></a></div>
+            <div class="gallery-item"><a href="photos/11_Waschbecken/spirito.jpg" rel="external"><img src="thumbs/11_Waschbecken/spirito_thumbs.jpg" /></a></div>
+                    </div>
 	</div>
 </div>
     
@@ -795,12 +833,10 @@
 			<p id="info"></p>
 			<div id="linkText" style="display:none;">
 				<h2>Link gefunden:</h2>
-				<p><a href="#" id="url" onclick="window.open(this.href,'_blank'); return false;">öffnen</a></p>
+				<p><a href="#" id="url" onclick="window.open(this.href,'_blank','location=yes,enableViewportScale=yes'); return false;">öffnen</a></p>
 			</div>
 		</div>
-		<script type="text/javascript" src="barcodescanner.js"></script>
-		<script type="text/javascript" src="childbrowser.js"></script>
-        <script type="text/javascript" src="scripts/main.js"></script>
+        <script type="text/javascript" src="js/main.js"></script>
 		<script type="text/javascript">
 			app.initialize();
 		</script>
@@ -816,8 +852,8 @@
 	<div data-role="content">
         <div class="errormsg"><p></p></div>
 		<ul id="brochurehome" data-role="listview"  data-corners="false" data-shadow="false">
-			<li id="products"><a href="http://www.framo.ch/downloads/epaper-RGB_Framo_Broschuere_2014/mobile.html" onclick="window.open(this.href,'_blank'); return false;" id="msg_products"></a></li>
-			<li id="careguide"><a href="http://www.framo.ch/downloads/epaper-Flyer_PDF_DU/mobile.html" onclick="window.open(this.href,'_blank'); return false;" id="msg_careguide"></a></li>
+			<li id="products"><a href="http://www.framo.ch/downloads/epaper-RGB_Framo_Broschuere_2014/mobile.html" onclick="window.open(this.href,'_blank','location=yes,enableViewportScale=yes'); return false;" id="msg_products"></a></li>
+			<li id="careguide"><a href="http://www.framo.ch/downloads/epaper-Flyer_PDF_DU/mobile.html" onclick="window.open(this.href,'_blank','location=yes,enableViewportScale=yes'); return false;" id="msg_careguide"></a></li>
 			<li id="order"><a href="#pagebrochureorder" id="msg_order"></a></li>
 		</ul>
 
@@ -837,23 +873,34 @@
 				<fieldset data-role="controlgroup">
 					<legend id="msg_order_text"></legend>
 					<label for="1">Framo SA Produktekatalog 2014</label>
-					<input type="checkbox" name="brochure" id="1" value="red" data-mini="true">
+					<input type="checkbox" name="brochure" id="1" value="Produktekatalog 2014" data-mini="true">
 					<label for="2">Framo SA Pflegeratgeber</label>
-					<input type="checkbox" name="brochure" id="2" value="green">
+					<input type="checkbox" name="brochure" id="2" value="Pflegeratgeber">
 				</fieldset>
-				<label for="firm" id="msg_order_company"></label>
-				<input type="text" name="firm" id="firm" >
-				<label for="name" id="msg_order_name"></label>
-				<input type="text" name="name" id="name" class="required" required>
-				<label for="address" id="msg_order_street"></label>
-				<input type="text" name="address" id="address" class="required" required>
-				<label for="plz" id="msg_order_postcode"></label>
-				<input type="text" name="plz" id="plz" class="required" required>
-				<label for="email" class="ui-input-text" id="msg_order_email"></label>
-				<input type="email" value="" id="email" name="email" class="required email" required>
-				<label for="tel" class="ui-input-text" id="msg_order_phone"></label>
-				<input type="tel" value="" id="tel" name="tel" class="required" required>
-
+                <fieldset data-role="fieldcontain"> 
+					<label for="firm" id="msg_order_company"></label>
+					<input type="text" name="firm" id="firm" >
+                </fieldset>
+                <fieldset data-role="fieldcontain"> 
+                    <label for="name" id="msg_order_name"></label>
+                    <input type="text" name="name" id="name" class="required" minlength="5">
+                </fieldset>
+                <fieldset data-role="fieldcontain"> 
+                    <label for="address" id="msg_order_street"></label>
+					<input type="text" name="address" id="address" class="required" minlength="5">
+                </fieldset>
+                <fieldset data-role="fieldcontain"> 
+                    <label for="plz" id="msg_order_postcode"></label>
+					<input type="text" name="plz" id="plz" class="required" minlength="5">
+                </fieldset>
+                <fieldset data-role="fieldcontain"> 
+                    <label for="email" class="ui-input-text" id="msg_order_email"></label>
+					<input type="email" value="" id="email" name="email" class="required email" minlength="5">
+                </fieldset>
+                <fieldset data-role="fieldcontain"> 
+                    <label for="tel" class="ui-input-text" id="msg_order_phone"></label>
+					<input type="tel" value="" id="tel" name="tel" class="required" minlength="5">
+                </fieldset>
 			</div>
 
 			<input type="submit" id="submit" value="Bestellen">
@@ -890,11 +937,17 @@
 					url = 'http://www.framo.ch/feed/userncdealer_dealers_fr.json';
 				}
 				$("#distributorLink").click(function() {
-					window.open(this.href, '_system', 'location=yes');                  
+					window.open(this.href, '_blank', 'location=yes,enableViewportScale=yes');                  
 				});
 				$.getJSON(url, function(data) {
 					var markers=[];
-					var gmarkers = [];
+					var gmarkers = [];                    
+                    google.maps.event.addListener(map, "click", function () {
+                		infowindow.close();
+                		for (var i=0; i<markers.length; i++) {
+                   			markers[i].setIcon('images/icon_gmap.png');
+                		}
+         			});
 					$.each(data.markers, function(i, marker) {
 						var latLng = new google.maps.LatLng(marker.lat, marker.lng);
 						var marker = new google.maps.Marker({
@@ -902,17 +955,21 @@
                             title: decodeURIComponent(escape(marker.company)),
                             icon: 'images/icon_gmap.png',
                             map: map,
-                            content:decodeURIComponent(escape(marker.company +'<br />'+marker.street +', '+ marker.zip +' '+ marker.place)),
+                            content:decodeURIComponent(escape('<br />'+marker.street +', '+ marker.zip +' '+ marker.place)),
                             image:marker.media,
                             address:decodeURIComponent(escape(marker.street +', '+ marker.zip +' '+ marker.place)),
                             link:marker.link
 						});
 
 						google.maps.event.addListener(marker, 'click', function() {
-							if (infowindow) infowindow.close();
-							//infowindow = new google.maps.InfoWindow({content: marker.title+'<br />'+ marker.content +''});
-							//infowindow.setOptions({disableAutoPan:false,maxWidth:"50"});
-							//infowindow.open(map, this);
+                            if(infowindow) infowindow.close();
+                            for (var i=0; i<markers.length; i++) {
+                   				markers[i].setIcon('images/icon_gmap.png');
+                			}  
+                            
+							infowindow = new google.maps.InfoWindow({content: marker.title+'<br />'+ marker.content +''});
+							infowindow.setOptions({disableAutoPan:false,maxWidth:"150"});
+							infowindow.open(map, this);
 							marker.setIcon('images/icon_distr.png');
 						});
 						markers.push(marker);
@@ -956,5 +1013,56 @@
 		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
 	})();
 </script>
+<script type="text/javascript">
+		$(document).ready(function(){
+			$.i18n.properties({
+								  name:'Messages',
+								  path:'bundle/',
+								  mode:'both',
+								  language:language_root,
+								  callback: function() {
+									  $('#msg_info,#msg_header_info').html($.i18n.prop('msg_info'));
+									  $('#msg_news,#msg_header_news').html($.i18n.prop('msg_news'));
+									  $('#msg_fotos,.msg_header_fotos').html($.i18n.prop('msg_fotos'));
+									  $('#msg_videos,#msg_header_videos').html($.i18n.prop('msg_videos'));
+									  $('#msg_qr,#msg_header_qr').html($.i18n.prop('msg_qr'));
+									  $('#msg_brochure,.msg_header_brochure').html($.i18n.prop('msg_brochure'));
+									  $('#msg_distributor,#msg_header_distributor').html($.i18n.prop('msg_distributor'));
+									  $('#msg_products').html($.i18n.prop('msg_products'));
+									  $('#msg_careguide').html($.i18n.prop('msg_careguide'));
+									  $('#msg_order').html($.i18n.prop('msg_order'));
+									  $('#msg_order_text').html($.i18n.prop('msg_order_text'));
+									  $('#msg_order_company').html($.i18n.prop('msg_order_company'));
+									  $('#msg_order_name').html($.i18n.prop('msg_order_name'));
+									  $('#msg_order_street').html($.i18n.prop('msg_order_street'));
+									  $('#msg_order_postcode').html($.i18n.prop('msg_order_postcode'));
+									  $('#msg_order_email').html($.i18n.prop('msg_order_email'));
+									  $('#msg_order_phone').html($.i18n.prop('msg_order_phone'));
+									  $('#msg_order_button').html($.i18n.prop('msg_order_button'));
+									  $('#msg_order_confirm').html($.i18n.prop('msg_order_confirm'));
+									  $('#msg_order_confirm_b').html($.i18n.prop('msg_order_confirm_b'));
+									  $('#msg_cat1').html($.i18n.prop('msg_cat1'));
+									  $('#msg_cat2').html($.i18n.prop('msg_cat2'));
+									  $('#msg_cat3').html($.i18n.prop('msg_cat3'));
+                                      $('#msg_cat31').html($.i18n.prop('msg_cat31'));
+									  $('#msg_cat4').html($.i18n.prop('msg_cat4'));
+									  $('#msg_cat5').html($.i18n.prop('msg_cat5'));
+									  $('#msg_cat6').html($.i18n.prop('msg_cat6'));
+									  $('#msg_cat7').html($.i18n.prop('msg_cat7'));
+									  $('#msg_cat8').html($.i18n.prop('msg_cat8'));
+									  $('#msg_cat9').html($.i18n.prop('msg_cat9'));
+									  $('#msg_cat10').html($.i18n.prop('msg_cat10'));
+                                      $('#msg_cat11').html($.i18n.prop('msg_cat11'));
+									  $('#msg_nonetwork').html($.i18n.prop('msg_nonetwork'));
+                                      $('#msg_standort').html($.i18n.prop('msg_standort'));
+                                      $('#msg_check_update').html($.i18n.prop('msg_check_update'));
+                                      $('#msg_update').html($.i18n.prop('msg_update'));
+                                      $('#msg_noupdate').html($.i18n.prop('msg_noupdate'));
+                                      $('#msg_warning').html($.i18n.prop('msg_warning'));
+                                      $('#msg_choose').html($.i18n.prop('msg_choose'));
+								  }
+							  });
+		});
+	</script>    
 </body>
 </html>
