@@ -55,14 +55,16 @@ var app = {
         //console.log('scanning');
        
         var scanner = cordova.require("cordova/plugin/BarcodeScanner");
-
         scanner.scan( function (result) { 
             
-             if (result.format == "QR_CODE") {
+             //if (result.format == "QR_CODE") {
+                if (result.text && !result.text.match(/^http([s]?):\/\/.*/)) {
+        			result.text('http://' + result.text);
+    			}
              	document.getElementById("qrurl").innerHTML = result.text;
              	document.getElementById("qrurl").setAttribute('href',result.text);
              	document.getElementById("linkText").setAttribute('style', 'display:block;');
-             }
+             //}
         }, function (error) { 
             console.log("Scanning failed: ", error); 
         } );
