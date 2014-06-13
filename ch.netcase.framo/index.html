@@ -1,4 +1,4 @@
-<html xmlns:fb="http://ogp.me/ns/fb#">
+<html xmlns:fb="http://ogp.me/ns/fb#" manifest="cache.manifest">
 <head>
 	<title>Framo SA</title>
 	<meta charset="utf-8" />
@@ -160,7 +160,7 @@
 		$(document).ready(function(){
             // CHECK STATUS
 			$('#pageinfo,#pagenews,#pagevideos').live('pagebeforeshow', function(e){
-		 		connectionStatus = navigator.onLine ? 'online' : 'offline';
+		 		connectionStatus = navigator.onLine ? 'online' : 'offline';alert(connectionStatus);
                 if(connectionStatus == 'online'){
                     return true;
                 }else{
@@ -207,13 +207,13 @@
 			});
             //PAGE FOTOS
             $('div.gallery-page').live('pagebeforeshow', function(e){
-		 		$("div.gallery a", e.target).photoSwipe({captionAndToolbarOpacity:1,zIndex:99999999});
+                $("div.gallery a", e.target).photoSwipe({captionAndToolbarOpacity:1,zIndex:99999999,swipeThreshold:200,swipeTimeThreshold:150});
             	return true;
             });
             // PAGE SCANNER
 		 	$('#pageqrscanner').live('pagebeforeshow', function() {
                 $("#qrscan").live('click', function() {
-
+				
 		 		app.initialize();
 		 		//console.log("I am now scanning");
 		 		cordova.plugins.barcodeScanner.scan( function(result){
