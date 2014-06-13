@@ -57,16 +57,12 @@ var app = {
         var scanner = cordova.require("cordova/plugin/BarcodeScanner");
 
         scanner.scan( function (result) { 
-                         
-             //document.getElementById("url").innerHTML = result.text;
-             //document.getElementById("url").setAttribute('href',result.text);
-             //document.getElementById("linkText").setAttribute('style', 'display:block;');
             
-            if (result.format == "QR_CODE") {
-                window.plugins.childBrowser.showWebPage(result.text, { showLocationBar: false });
-            }
-            
-
+             if (result.format == "QR_CODE") {
+             	document.getElementById("qrurl").innerHTML = result.text;
+             	document.getElementById("qrurl").setAttribute('href',result.text);
+             	document.getElementById("linkText").setAttribute('style', 'display:block;');
+             }
         }, function (error) { 
             console.log("Scanning failed: ", error); 
         } );

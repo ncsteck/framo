@@ -217,10 +217,7 @@
 		 		app.initialize();
 		 		//console.log("I am now scanning");
 		 		cordova.plugins.barcodeScanner.scan( function(result){
-                    //if (!result.cancelled) {
-                    window.open(result.text, '_blank', 'location=yes,enableViewportScale=yes');
-                    //$("#result").text(result.format + " | " + result.text);
-                    //}
+                    
 		 		}, function(error){
 		 			alert("Scanning failed: " + error);
                 });
@@ -324,7 +321,7 @@
 		</div>
 	</div><!-- /content -->
 </div>
-<!-- TEST -->
+<!-- UPDATE TEST -->
 <div data-role="page" id="pagetest">
 	<div data-role="header">
 		<a href="#pagehome" class="back" ><img src="images/icon_arrow_back.png" /> </a>
@@ -832,8 +829,8 @@
 			<p><a href="#" data-role="button" id="scan">SCAN</a></p>
 			<p id="info"></p>
 			<div id="linkText" style="display:none;">
-				<h2>Link gefunden:</h2>
-				<p><a href="#" id="url" onclick="window.open(this.href,'_blank','location=yes,enableViewportScale=yes'); return false;">öffnen</a></p>
+				<h3>Link gefunden:</h3>
+				<p><a href="#" id="qrurl" onclick="window.open(this.href,'_blank','location=yes,enableViewportScale=yes'); return false;">öffnen</a></p>
 			</div>
 		</div>
         <script type="text/javascript" src="js/main.js"></script>
