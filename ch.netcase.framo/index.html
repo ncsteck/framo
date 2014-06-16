@@ -22,17 +22,25 @@
 	<script type="text/javascript" src="js/jquery.animate-enhanced.min.js"></script>
 	<script type="text/javascript" src="js/klass.min.js"></script>
 	<script type="text/javascript" src="js/code.photoswipe.jquery-3.0.5.min.js"></script>
-	<script type="text/javascript" src="js/jquery.validate.min.js"></script>
 	<script type="text/javascript" src="js/jquery.i18n.properties-min-1.0.9.js"></script>
 	<script src="http://platform.twitter.com/widgets.js" type="text/javascript"></script>
 	<script type="text/javascript">
 		document.addEventListener("deviceready", onDeviceReady, false);
-		document.addEventListener("resume", onDeviceReady, false);
+		document.addEventListener("resume", onResume, false);
 
-		function onDeviceReady () {
+		function onDeviceReady () 
+        	document.addEventListener("offline", onOffline, false);
 			var networkState = navigator.network.connection.type;
 		}
+        function onOffline() {
+            var offline = true;
+    	}
+        function onResume() {
+			
+            //window.location.reload('index.html');
+  		 
 
+        }
 		language = navigator.language.split("-");
 		language_root = (language[0] != 'fr') ? 'de': 'fr';
 		var directionsDisplay;
@@ -42,6 +50,7 @@
 		var mylatitude;
 		var mylongitude;
         var warning = false;
+        var closeButton = (language_root == 'de')? 'Schliessen':'Terminé';
 		function initialize() {
 			var mapOptions = {
 				zoom: 12
@@ -50,16 +59,19 @@
 									  mapOptions);
 			if(navigator.geolocation) {
 				navigator.geolocation.getCurrentPosition(function(position) {
-					var pos = new google.maps.LatLng(position.coords.latitude,
-													 position.coords.longitude);
-
-					var infowindow = new google.maps.InfoWindow({
+					
+                    var pos = new google.maps.LatLng(position.coords.latitude,
+                                                     position.coords.longitude);
+                    var infoContent = (language_root == 'de')?'Ihr Standort':'Votre position';
+                    var infowindow = new google.maps.InfoWindow({
                         map: map,
                         position: pos,
-                        content: msg_standort
+                        content: '<div style="width:100px">' + infoContent + '</div>',
+                        maxWidth: 0
                     });
-					infowindow.setOptions({disableAutoPan:false,maxWidth:"200"});
-					map.setCenter(pos);
+                    infowindow.setOptions({disableAutoPan:false});
+                    map.setCenter(pos);
+					
 				}, function() {
 					handleNoGeolocation(true);
 				});
@@ -113,70 +125,43 @@
 
 		}
 		function twitter_button () {
-			window.open('https://twitter.com/share?text=Framo%20SA%20Empfehlung&url=http://www.framo.ch', '_blank', 'location=yes,enableViewportScale=yes');
+			window.open('https://twitter.com/share?text=Framo%20SA%20Empfehlung&url=http://www.framo.ch', '_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+'');
 		}
 		function google_button () {
-			window.open('https://plus.google.com/share?url=http//www.framo.ch', '_blank', 'location=yes,enableViewportScale=yes');
+			window.open('https://plus.google.com/share?url=http//www.framo.ch', '_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+'');
 		}
-
-        function check_update () {
-            var serverFeedVersion = (function () {
-                var serverFeedVersion = null;
-                $.ajax({
-                    'async': false,
-                    'global': false,
-                    'url': 'http://www.framo.ch/framo/version.json',
-                    'dataType': "json",
-                    'success': function (data) {
-                        serverFeedVersion = data.FeedVersion;
-                    }
-                });
-                return serverFeedVersion;
-            })();
-            var localFeedVersion = (function () {
-                var localFeedVersion = null;
-                $.ajax({
-                    'async': false,
-                    'global': false,
-                    'url': 'version.json',
-                    'dataType': "json",
-                    'success': function (data) {
-                        localFeedVersion = data.FeedVersion;
-                    }
-                });
-                return localFeedVersion;
-            })(); 
-
-            if(serverFeedVersion > localFeedVersion) {
-                $('#msg_check_update,#msg_noupdate').hide();
-                $('#feed').show();
-            }else {
-                $('#msg_noupdate').show();
-            }
-        }
-        function update () {
-            
-        }
+        
 		$(document).ready(function(){
             // CHECK STATUS
-			$('#pageinfo,#pagenews,#pagevideos').live('pagebeforeshow', function(e){
-		 		connectionStatus = navigator.onLine ? 'online' : 'offline';alert(connectionStatus);
-                if(connectionStatus == 'online'){
-                    return true;
-                }else{
-                    $('.errormsg p').html(msg_nonetwork);
-                    $('#msg_check_update,#videos,#brochurehome,#map_canvas,#poi').hide();
-                    
-                }
+			$('#pageinfo,#pagenews,#pagevideos,#pagebrochure,#pagebrochureorder,#second').live('pagebeforeshow', function(e){console.log(offline);
+                setInterval(function () {
+                        $.ajax({
+                            url: 'http://www.framo.ch/framo/version.json?callback=?',
+    						type: 'GET',
+                            dataType: 'jsonp',
+    						contentType: "application/json;charset=utf-8",
+                            success: function (data) {console.log(data);
+                                    $('.errormsg p').html('');
+                                	$('#videos,#brochurehome,#map_canvas').show();
+                            },
+                            error: function (data) {
+                                   $('.errormsg p').html(msg_nonetwork);
+                                	$('#msg_check_update,#update,#videos,#brochurehome,#pagebrochureorder,#second,#map_canvas,#poi').hide(); 
+                            }  
+                        });
+               
+               }, 5000); 	
+           
             });
             //PAGE NEWS
             $('#pagenews').live("pagebeforeshow", function(event) {				
                 var title;
                 var image;
                 var StrippedString;
-                $.ajax({
+                var urlNews = (language_root == 'fr')?"http://www.framo.ch/index.php?id=524&type=9818&L=1":"http://www.framo.ch/index.php?id=524&type=9818&L=3";
+				$.ajax({
                     type: "GET",
-                    url: "http://www.framo.ch/index.php?id=524&type=9818",
+                    url: urlNews,
                     dataType: "xml",
                     success: function(xml) {
                         var output = '<div />';
@@ -202,7 +187,7 @@
                     e.preventDefault();
                     var newsId = $(this).attr("id");
                     var imageSrc = $("#image"+newsId).attr('src');
-                    window.open('http://m.facebook.com/sharer.php?u=http://www.framo.ch&t='+ encodeURIComponent(StrippedString) +'&s=100&p[images][0]='+image+'','_blank', 'location=yes,enableViewportScale=yes');
+                    window.open('http://m.facebook.com/sharer.php?u=http://www.framo.ch&t='+ encodeURIComponent(StrippedString) +'&s=100&p[images][0]='+image+'','_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+'');
                 });	
 			});
             //PAGE FOTOS
@@ -225,8 +210,9 @@
    
                 
 		 });
-			
-		 	$('#submit').live('click', function() { // catch the form's submit event
+            // BROCHURE
+
+		 	$('#msg_submit').live('click', function() { // catch the form's submit event
                 if($('input[type="checkbox"]').is(':checked')){    				
                     
                     $('#brochure .required').each(function(){
@@ -275,22 +261,6 @@
                 }
                 return false; // cancel original event to prevent form submitting
 			});
-            
-            
-            /* $('#pagetest').live('pagebeforeshow', function() {
-                var jsonURL = "http://www.framo.ch/framo/galleries.json";
-                	$.getJSON(jsonURL, function (json) {
-					var imgList= "";
-
-					$.each(json.gallery, function () {
-                        imgList += '<li id="'+ this.galleryTitle +'" data-theme="c" class="ui-btn ui-btn-icon-right ui-li ui-btn-hover-c ui-btn-down-c"><div class="ui-btn-inner ui-li"><div class="ui-btn-text"><a href="#pagegallery'+ this.num +'" id="'+ this.id +'" class="ui-link-inherit">'+ this.name +'</a></div><span class="ui-icon ui-icon-arrow-r"></span></div></li>';
-					});
-
-					$('#albums_test').append(imgList);
-				});
-            });*/
-            
-            
 		});
 
 	</script>
@@ -349,8 +319,8 @@
 			CH-1680 Romont</p>
 		<p><a href="tel:0266519651">Tel. 026 651 96 51</a><br />
 			<a href="tel:0266519650">Fax. 026 651 96 50</a><br /><br />
-			<a href="mailto:info@framo.ch" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes'); return false;">E-Mail: info@framo.ch</a><br />
-			<a href="http://www.framo.ch" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes'); return false;">www.framo.ch</a>
+			<a href="mailto:info@framo.ch" onclick="window.open(this.href,'_system', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">E-Mail: info@framo.ch</a><br />
+			<a href="http://www.framo.ch" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">www.framo.ch</a>
 		</p>
  <!--       <div class="errormsg"><p></p></div>
         <p><a href="#" onclick="check_update()" data-role="button" id="msg_check_update"></a></p>
@@ -800,15 +770,15 @@
 	<div data-role="content">
     	<div class="errormsg"><p></p></div>
         <div id="videos">
-            <a href="http://vimeo.com/80304090" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/promovideo_de.png" /></a><br /><p><a href="http://vimeo.com/80304090" onclick="window.open(this.href,'_blank'); return false;">Promo-Video "Deutsch"</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
+            <a href="http://vimeo.com/80304090" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;"><img target="_blank" src="images/promovideo_de.png" /></a><br /><p><a href="http://vimeo.com/80304090" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">Promo-Video "Deutsch"</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">Vimeo</a>.</p>
             <br /><hr/>
-            <a href="http://vimeo.com/80291500" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/promovideo_fr.png" /></a><br /><p><a href="http://vimeo.com/80291500" onclick="window.open(this.href,'_blank'); return false;">Promo Video "Français"</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
+            <a href="http://vimeo.com/80291500" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;"><img target="_blank" src="images/promovideo_fr.png" /></a><br /><p><a href="http://vimeo.com/80291500" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">Promo Video "Français"</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">Vimeo</a>.</p>
             <br /><hr/>
-            <a href="http://vimeo.com/74304221" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/cristalvideo_de.png" /></a><br /><p><a href="http://vimeo.com/74304221" onclick="window.open(this.href,'_blank'); return false;">FRAMO CRISTAL - DE</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.<br />FRAMO - CRISTAL MADE WITH SWAROVSKI&reg; ELEMENTS</p>
+            <a href="http://vimeo.com/74304221" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;"><img target="_blank" src="images/cristalvideo_de.png" /></a><br /><p><a href="http://vimeo.com/74304221" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">FRAMO CRISTAL - DE</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">Vimeo</a>.<br />FRAMO - CRISTAL MADE WITH SWAROVSKI&reg; ELEMENTS</p>
             <br /><hr/>
-            <a href="http://vimeo.com/74304031" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/cristalvideo_fr.png" /></a><br /><p><a href="http://vimeo.com/74304031" onclick="window.open(this.href,'_blank'); return false;">FRAMO - CRISTAL FR</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.<br />FRAMO - CRISTAL MADE WITH SWAROVSKI&reg; ELEMENTS</p>
+            <a href="http://vimeo.com/74304031" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;"><img target="_blank" src="images/cristalvideo_fr.png" /></a><br /><p><a href="http://vimeo.com/74304031" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">FRAMO - CRISTAL FR</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">Vimeo</a>.<br />FRAMO - CRISTAL MADE WITH SWAROVSKI&reg; ELEMENTS</p>
             <br /><hr/>
-            <a href="http://vimeo.com/20647582" onclick="window.open(this.href,'_blank'); return false;"><img target="_blank" src="images/wavevideo_de.png" /></a><br /><p><a href="http://vimeo.com/20647582" onclick="window.open(this.href,'_blank'); return false;">WAVE</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank'); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank'); return false;">Vimeo</a>.</p>
+            <a href="http://vimeo.com/20647582" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;"><img target="_blank" src="images/wavevideo_de.png" /></a><br /><p><a href="http://vimeo.com/20647582" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">WAVE</a> from <a href="http://vimeo.com/framo" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">FRAMO</a> on <a href="http://vimeo.com" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">Vimeo</a>.</p>
 		</div>
 	</div>
 </div>
@@ -829,8 +799,8 @@
 			<p><a href="#" data-role="button" id="scan">SCAN</a></p>
 			<p id="info"></p>
 			<div id="linkText" style="display:none;">
-				<h3>Link gefunden:</h3>
-				<p><a href="#" id="qrurl" onclick="window.open(this.href,'_blank','location=yes,enableViewportScale=yes'); return false;">öffnen</a></p>
+				<h3 id="msg_qr_link"></h3>
+				<p><a href="#" id="qrurl" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;">öffnen</a></p>
 			</div>
 		</div>
         <script type="text/javascript" src="js/main.js"></script>
@@ -849,8 +819,8 @@
 	<div data-role="content">
         <div class="errormsg"><p></p></div>
 		<ul id="brochurehome" data-role="listview"  data-corners="false" data-shadow="false">
-			<li id="products"><a href="http://www.framo.ch/downloads/epaper-RGB_Framo_Broschuere_2014/mobile.html" onclick="window.open(this.href,'_blank','location=yes,enableViewportScale=yes'); return false;" id="msg_products"></a></li>
-			<li id="careguide"><a href="http://www.framo.ch/downloads/epaper-Flyer_PDF_DU/mobile.html" onclick="window.open(this.href,'_blank','location=yes,enableViewportScale=yes'); return false;" id="msg_careguide"></a></li>
+			<li id="products"><a href="http://www.framo.ch/downloads/epaper-RGB_Framo_Broschuere_2014/mobile.html" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;" id="msg_products"></a></li>
+			<li id="careguide"><a href="http://www.framo.ch/downloads/epaper-Flyer_PDF_DU/mobile.html" onclick="window.open(this.href,'_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+''); return false;" id="msg_careguide"></a></li>
 			<li id="order"><a href="#pagebrochureorder" id="msg_order"></a></li>
 		</ul>
 
@@ -869,10 +839,10 @@
 			<div data-role="fieldcontain">
 				<fieldset data-role="controlgroup">
 					<legend id="msg_order_text"></legend>
-					<label for="1">Framo SA Produktekatalog 2014</label>
-					<input type="checkbox" name="brochure" id="1" value="Produktekatalog 2014" data-mini="true">
-					<label for="2">Framo SA Pflegeratgeber</label>
-					<input type="checkbox" name="brochure" id="2" value="Pflegeratgeber">
+					<label for="products" id="msg_order_products"></label>
+					<input type="checkbox" name="brochure" id="products" value="Framo SA Produktekatalog 2014" data-mini="true">
+					<label for="careguide" id="msg_order_careguide"></label>
+					<input type="checkbox" name="brochure" id="careguide" value="Framo SA Pflegeratgeber">
 				</fieldset>
                 <fieldset data-role="fieldcontain"> 
 					<label for="firm" id="msg_order_company"></label>
@@ -900,12 +870,12 @@
                 </fieldset>
 			</div>
 
-			<input type="submit" id="submit" value="Bestellen">
+			<button class="ui-btn" id="msg_submit"></button>
 		</form>
 
 	</div><!-- /content -->
 </div>
-
+    
 <div data-role="page" id="second">
 	<div data-role="header">
 		<a href="#pagebrochure" class="back" ><img src="images/icon_arrow_back.png" /> </a>
@@ -927,14 +897,15 @@
 					document.activeElement.blur();
 					$("form").blur();
 					return false;
-				});
-				initialize();
-				var url = 'http://www.framo.ch/feed/userncdealer_dealers_de.json';
-				if(language_root == 'fr'){
-					url = 'http://www.framo.ch/feed/userncdealer_dealers_fr.json';
-				}
+				});				
+                initialize();              
+                var url = 'http://www.framo.ch/feed/userncdealer_dealers_de.json';
+                if(language_root == 'fr'){
+                	url = 'http://www.framo.ch/feed/userncdealer_dealers_fr.json';
+                }
+                
 				$("#distributorLink").click(function() {
-					window.open(this.href, '_blank', 'location=yes,enableViewportScale=yes');                  
+					window.open(this.href, '_blank', 'location=yes,enableViewportScale=yes,closebuttoncaption='+closeButton+'');                  
 				});
 				$.getJSON(url, function(data) {
 					var markers=[];
@@ -942,7 +913,7 @@
                     google.maps.event.addListener(map, "click", function () {
                 		infowindow.close();
                 		for (var i=0; i<markers.length; i++) {
-                   			markers[i].setIcon('images/icon_gmap.png');
+                   			markers[i].setIcon('images/pin.png');
                 		}
          			});
 					$.each(data.markers, function(i, marker) {
@@ -950,22 +921,21 @@
 						var marker = new google.maps.Marker({
                             position: latLng,
                             title: decodeURIComponent(escape(marker.company)),
-                            icon: 'images/icon_gmap.png',
+                            icon: 'images/pin.png',
                             map: map,
                             content:decodeURIComponent(escape('<br />'+marker.street +', '+ marker.zip +' '+ marker.place)),
                             image:marker.media,
-                            address:decodeURIComponent(escape(marker.street +', '+ marker.zip +' '+ marker.place)),
-                            link:marker.link
+                            address:decodeURIComponent(escape(marker.street +', '+ marker.zip +' '+ marker.place))
 						});
 
 						google.maps.event.addListener(marker, 'click', function() {
                             if(infowindow) infowindow.close();
                             for (var i=0; i<markers.length; i++) {
-                   				markers[i].setIcon('images/icon_gmap.png');
+                   				markers[i].setIcon('images/pin.png');
                 			}  
                             
 							infowindow = new google.maps.InfoWindow({content: marker.title+'<br />'+ marker.content +''});
-							infowindow.setOptions({disableAutoPan:false,maxWidth:"150"});
+							infowindow.setOptions({disableAutoPan:false,maxWidth:"150",zIndex:999});
 							infowindow.open(map, this);
 							marker.setIcon('images/icon_distr.png');
 						});
@@ -975,7 +945,7 @@
 								.click(function(){
 										   $('#poi').html('<div class="pin"><img src="images/icon_pin.png" /></div><div>'+ marker.title + '<span id="distance"></span><br /><span>'+ marker.address +'</span><br /></div>').show();
 										   google.maps.event.trigger(marker,'click');
-										   map.setZoom(15);
+										   map.setZoom(10);
 										   map.setCenter(latLng);
 										   calcRoute(latLng);
                                     	   window.scrollTo(0,0);
@@ -1057,8 +1027,14 @@
                                       $('#msg_noupdate').html($.i18n.prop('msg_noupdate'));
                                       $('#msg_warning').html($.i18n.prop('msg_warning'));
                                       $('#msg_choose').html($.i18n.prop('msg_choose'));
+                                      $('#msg_title').html($.i18n.prop('msg_title'));
+                                      $('#msg_submit').html($.i18n.prop('msg_submit'));
+                                      $('#msg_order_products').html($.i18n.prop('msg_products'));
+                                      $('#msg_order_careguide').html($.i18n.prop('msg_careguide'));
+                                      $('#msg_qr_link').html($.i18n.prop('msg_qr_link'));
 								  }
 							  });
+            
 		});
 	</script>    
 </body>

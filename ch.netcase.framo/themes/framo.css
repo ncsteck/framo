@@ -86,7 +86,7 @@ div.ui-controlgroup-label {
 #pagenews .ui-content,
 #pagedistributor .ui-content,
 .ui-content {
-	margin:48px 0 0 !important;
+	margin:40px 0 0 !important;
 	padding: 10px !important;
 }
 .gallery-item a {
@@ -112,6 +112,7 @@ div.ui-controlgroup-label {
 	position: absolute;
 }
 .errormsg p {
+    color:#ff0000;
     font-size:12px;
 }
 /* Separators
@@ -524,7 +525,7 @@ button[disabled],
 	margin: 0;
 	padding: 0;
 	position: absolute;
-	width: 100%;
+	width: 94%;
 }
 
 .ui-header {
@@ -553,6 +554,7 @@ button[disabled],
 #pagehome .ui-btn {
 	background: transparent;
 	border: none;
+    margin: 0.5em 0;
 }
 #pagehome a {
 	color: #FFFFFF;
@@ -741,4 +743,14 @@ hr {
 	#pagehome .ui-content img {
 		width: 50px;
 	}
+}
+@media only screen and (min-width : 321px) and (orientation : landscape) {
+    #pagehome .ui-content {
+        width: 96%;
+    }
+}
+@media only screen and (min-width : 601px) and (orientation : landscape) {
+    #pagehome .ui-content {
+        width: 98%;
+    }
 }

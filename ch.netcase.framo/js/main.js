@@ -41,7 +41,7 @@ var app = {
 
     // Update DOM on a Received Event
     receivedEvent: function(id) {
-        var parentElement = document.getElementById(url);
+        var parentElement = document.getElementById(qrurl);
         //var listeningElement = parentElement.querySelector('.listening');
         //var receivedElement = parentElement.querySelector('.received');
 
@@ -66,7 +66,7 @@ var app = {
              	document.getElementById("linkText").setAttribute('style', 'display:block;');
              //}
         }, function (error) { 
-            console.log("Scanning failed: ", error); 
+ 
         } );
     },
 
