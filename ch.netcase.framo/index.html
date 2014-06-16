@@ -1,4 +1,4 @@
-<html xmlns:fb="http://ogp.me/ns/fb#" manifest="cache.manifest">
+<html xmlns:fb="http://ogp.me/ns/fb#">
 <head>
 	<title>Framo SA</title>
 	<meta charset="utf-8" />
@@ -28,13 +28,9 @@
 		document.addEventListener("deviceready", onDeviceReady, false);
 		document.addEventListener("resume", onResume, false);
 
-		function onDeviceReady () 
-        	document.addEventListener("offline", onOffline, false);
-			var networkState = navigator.network.connection.type;
+        function onDeviceReady () {
+			 var networkState = navigator.network.connection.type;
 		}
-        function onOffline() {
-            var offline = true;
-    	}
         function onResume() {
 			
             //window.location.reload('index.html');
@@ -133,13 +129,15 @@
         
 		$(document).ready(function(){
             // CHECK STATUS
-			$('#pageinfo,#pagenews,#pagevideos,#pagebrochure,#pagebrochureorder,#second').live('pagebeforeshow', function(e){console.log(offline);
-                setInterval(function () {
+			setInterval(function () {
                         $.ajax({
                             url: 'http://www.framo.ch/framo/version.json?callback=?',
     						type: 'GET',
                             dataType: 'jsonp',
     						contentType: "application/json;charset=utf-8",
+                            timeout: 1000,
+                            cache:false,
+                            crossDomain: true,
                             success: function (data) {console.log(data);
                                     $('.errormsg p').html('');
                                 	$('#videos,#brochurehome,#map_canvas').show();
@@ -150,7 +148,9 @@
                             }  
                         });
                
-               }, 5000); 	
+               }, 5000); 
+            $('#pageinfo,#pagenews,#pagevideos,#pagebrochure,#pagebrochureorder,#second').live('pagebeforeshow', function(e){
+            		
            
             });
             //PAGE NEWS
