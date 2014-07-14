@@ -1,0 +1,46 @@
+{
+  "ProjectGuid": "38bc0908-3699-4d09-a8d6-9b137677883e",
+  "ProjectTypeGuids": "{070BCB52-5A75-4F8C-A973-144AF0EAFCC9}",
+  "AppIdentifier": "ch.netcase.framo",
+  "ProjectName": "ch.netcase.framo",
+  "IsRunnable": "true",
+  "AndroidPermissions": [
+    "android.permission.CAMERA",
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_LOCATION_EXTRA_COMMANDS",
+    "android.permission.READ_PHONE_STATE",
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_NETWORK_STATE"
+  ],
+  "DeviceOrientations": [
+    "Portrait",
+    "Landscape"
+  ],
+  "iOSStatusBarStyle": "Hidden",
+  "BundleVersion": "1.0.0",
+  "iOSDisplayName": "",
+  "AndroidVersionCode": "1",
+  "AndroidHardwareAcceleration": "True",
+  "iOSDeviceFamily": [
+    "1",
+    "2"
+  ],
+  "iOSBackgroundMode": [],
+  "FrameworkVersion": "3.2.0",
+  "CorePlugins": [
+    "org.apache.cordova.camera",
+    "org.apache.cordova.device",
+    "org.apache.cordova.device-orientation",
+    "org.apache.cordova.geolocation",
+    "org.apache.cordova.inappbrowser",
+    "org.apache.cordova.network-information",
+    "org.apache.cordova.splashscreen",
+    "org.apache.cordova.statusbar",
+    "com.phonegap.plugins.barcodescanner"
+  ],
+  "DisplayName": "FRAMO SA",
+  "Description": "ch.netcase.framo",
+  "Author": "NETCASE GmbH",
+  "Framework": "Cordova"
+}
